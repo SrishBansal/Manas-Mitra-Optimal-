@@ -5,10 +5,23 @@ import { useState, useRef, useEffect, FormEvent } from 'react';
 type Message = {
   role: 'user' | 'assistant';
   content: string;
+  emotion?: string;
+  timestamp: number;
 };
 
 type ChatResponse = {
-  message: Message;
+  emotion: string;
+  reply: string;
+};
+
+const emotionColors: Record<string, string> = {
+  sadness: 'bg-blue-100 text-blue-800',
+  joy: 'bg-yellow-100 text-yellow-800',
+  love: 'bg-pink-100 text-pink-800',
+  anger: 'bg-red-100 text-red-800',
+  fear: 'bg-purple-100 text-purple-800',
+  surprise: 'bg-green-100 text-green-800',
+  neutral: 'bg-gray-100 text-gray-800',
 };
 
 export default function ChatPage() {
@@ -30,19 +43,24 @@ export default function ChatPage() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: Message = { 
+      role: 'user', 
+      content: input,
+      timestamp: Date.now()
+    };
+    
     setMessages(prevMessages => [...prevMessages, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage],
+          message: input,
         }),
       });
 
@@ -51,7 +69,15 @@ export default function ChatPage() {
       }
 
       const data: ChatResponse = await response.json();
-      setMessages(prevMessages => [...prevMessages, data.message]);
+      
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: data.reply,
+        emotion: data.emotion,
+        timestamp: Date.now()
+      };
+      
+      setMessages(prevMessages => [...prevMessages, assistantMessage]);
     } catch (error) {
       console.error('Error:', error);
       setMessages(prevMessages => [
@@ -59,6 +85,7 @@ export default function ChatPage() {
         {
           role: 'assistant',
           content: 'Sorry, I encountered an error. Please try again.',
+          timestamp: Date.now()
         },
       ]);
     } finally {
@@ -91,14 +118,23 @@ export default function ChatPage() {
                 message.role === 'user' ? 'justify-end' : 'justify-start'
               }`}
             >
-              <div
-                className={`max-w-3/4 rounded-lg p-3 ${
-                  message.role === 'user'
-                    ? 'bg-indigo-600 text-white rounded-br-none'
-                    : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
-                }`}
-              >
-                <p className="whitespace-pre-wrap">{message.content}</p>
+              <div className="flex flex-col max-w-3/4">
+                {message.role === 'assistant' && message.emotion && (
+                  <span className={`text-xs px-2 py-1 rounded-full w-fit mb-1 ${
+                    emotionColors[message.emotion] || emotionColors.neutral
+                  }`}>
+                    {message.emotion.charAt(0).toUpperCase() + message.emotion.slice(1)}
+                  </span>
+                )}
+                <div
+                  className={`rounded-lg p-3 ${
+                    message.role === 'user'
+                      ? 'bg-indigo-600 text-white rounded-br-none'
+                      : 'bg-white border border-gray-200 rounded-bl-none shadow-sm'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                </div>
               </div>
             </div>
           ))

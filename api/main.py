@@ -1,11 +1,12 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Literal
 import torch
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, AutoModelForSequenceClassification, pipeline
 import logging
 import os
+from enum import Enum
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,121 +24,144 @@ app.add_middleware(
 )
 
 # Model configuration
-BASE_MODEL = "google/flan-t5-base"  # Base model name
-MODEL_PATH = "../outputs/lora-manas-mitra-irec/checkpoint-66"  # Path to your fine-tuned model
+EMOTION_MODEL = "bhadresh-savani/distilbert-base-uncased-emotion"
+RESPONSE_MODEL = "google/flan-t5-small"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Load tokenizer and base model
+# Initialize models
 try:
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
+    logger.info("Loading emotion classification model...")
+    emotion_tokenizer = AutoTokenizer.from_pretrained(EMOTION_MODEL)
+    emotion_model = AutoModelForSequenceClassification.from_pretrained(EMOTION_MODEL).to(DEVICE)
+    emotion_model.eval()
     
-    # Load the base model
-    model = AutoModelForSeq2SeqLM.from_pretrained(
-        BASE_MODEL,
-        device_map="auto" if torch.cuda.is_available() else None,
-        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-    )
+    logger.info("Loading response generation model...")
+    response_tokenizer = AutoTokenizer.from_pretrained(RESPONSE_MODEL)
+    response_model = AutoModelForSeq2SeqLM.from_pretrained(RESPONSE_MODEL).to(DEVICE)
+    response_model.eval()
     
-    # Load the LoRA weights
-    from peft import PeftModel
-    model = PeftModel.from_pretrained(model, MODEL_PATH)
-    model = model.merge_and_unload()  # Merge LoRA weights with base model
+    logger.info(f"Models loaded on {DEVICE}")
     
-    model.eval()
-    logger.info(f"Model loaded on {DEVICE} with LoRA weights from {MODEL_PATH}")
 except Exception as e:
-    logger.error(f"Error loading model: {str(e)}")
+    logger.error(f"Error loading models: {str(e)}")
     raise
 
+class Emotion(str, Enum):
+    SADNESS = "sadness"
+    JOY = "joy"
+    LOVE = "love"
+    ANGER = "anger"
+    FEAR = "fear"
+    SURPRISE = "surprise"
+
 class ChatMessage(BaseModel):
-    role: str  # 'user' or 'assistant'
+    role: Literal["user", "assistant"]
     content: str
 
 class ChatRequest(BaseModel):
-    messages: List[ChatMessage]
+    message: str
     user_id: Optional[str] = None
 
 class ChatResponse(BaseModel):
-    message: ChatMessage
+    emotion: str
+    reply: str
 
 @app.get("/")
 async def health_check():
-    return {"status": "healthy", "model": MODEL_NAME, "device": DEVICE}
+    return {
+        "status": "healthy", 
+        "models": {
+            "emotion": EMOTION_MODEL,
+            "response": RESPONSE_MODEL
+        },
+        "device": DEVICE
+    }
 
-def format_conversation(messages: List[ChatMessage]) -> str:
-    """Format the conversation history for the model."""
-    # Only include the last 3 messages to avoid context window issues
-    recent_messages = messages[-3:]
-    
-    # Format as a conversation
-    formatted = []
-    for msg in recent_messages:
-        if msg.role == 'user':
-            formatted.append(f"User: {msg.content}")
-        else:
-            formatted.append(f"Assistant: {msg.content}")
-    
-    # Add a prompt for the next response
-    formatted.append("Assistant:")
-    return "\n".join(formatted)
-
-@app.post("/chat", response_model=ChatResponse)
-async def chat(chat_request: ChatRequest):
+def detect_emotion(text: str) -> str:
+    """Detect the emotion in the given text."""
     try:
-        # Format the conversation
-        conversation = format_conversation(chat_request.messages)
+        inputs = emotion_tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(DEVICE)
+        with torch.no_grad():
+            outputs = emotion_model(**inputs)
         
-        # Tokenize the input
-        inputs = tokenizer(
-            conversation,
+        # Get the predicted emotion
+        predicted_class_idx = torch.argmax(outputs.logits, dim=1).item()
+        emotion = emotion_model.config.id2label[predicted_class_idx]
+        
+        return emotion.lower()
+    except Exception as e:
+        logger.error(f"Error in emotion detection: {str(e)}")
+        return "neutral"
+
+def generate_response(message: str, emotion: str) -> str:
+    """Generate a response based on the message and detected emotion."""
+    try:
+        # Create a prompt that includes the emotion context
+        prompt = f"""You are a mental health assistant. The user is feeling {emotion}.
+        
+        User: {message}
+        Assistant:"""
+        
+        # Tokenize and generate response
+        inputs = response_tokenizer(
+            prompt,
             return_tensors="pt",
-            max_length=384,
+            max_length=512,
             truncation=True,
-            padding=True,
-            add_special_tokens=True
+            padding=True
         ).to(DEVICE)
         
-        # Generate response with adjusted parameters
         with torch.no_grad():
-            outputs = model.generate(
+            outputs = response_model.generate(
                 **inputs,
-                max_new_tokens=256,
+                max_new_tokens=150,
                 temperature=0.7,
                 top_p=0.9,
-                top_k=50,
                 do_sample=True,
                 num_beams=3,
-                no_repeat_ngram_size=3,
-                early_stopping=True,
-                pad_token_id=tokenizer.eos_token_id
+                no_repeat_ngram_size=2,
+                early_stopping=True
             )
         
         # Decode and clean the response
-        response_text = tokenizer.decode(
-            outputs[0], 
+        response = response_tokenizer.decode(
+            outputs[0],
             skip_special_tokens=True,
             clean_up_tokenization_spaces=True
         )
         
-        # Sometimes the model repeats the conversation, so we'll clean that up
-        if "Assistant:" in response_text:
-            response_text = response_text.split("Assistant:")[-1].strip()
+        # Remove the prompt from the response if it's included
+        if prompt in response:
+            response = response.replace(prompt, "")
         
-        # Remove any remaining role prefixes
-        for prefix in ["User:", "Assistant:"]:
-            if response_text.startswith(prefix):
-                response_text = response_text[len(prefix):].strip()
+        return response.strip()
+    except Exception as e:
+        logger.error(f"Error generating response: {str(e)}")
+        return "I'm sorry, I'm having trouble processing your request right now. Could you try again later?"
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(chat_request: ChatRequest):
+    try:
+        # Get the latest user message
+        user_message = chat_request.message
+        
+        # Detect emotion from the user's message
+        emotion = detect_emotion(user_message)
+        
+        # Generate a response based on the message and detected emotion
+        reply = generate_response(user_message, emotion)
         
         return {
-            "message": {
-                "role": "assistant",
-                "content": response_text
-            }
+            "emotion": emotion,
+            "reply": reply
         }
         
     except Exception as e:
-        logger.error(f"Error generating response: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in chat endpoint: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Sorry, I'm having trouble processing your request. Please try again."
+        )
 
 if __name__ == "__main__":
     import uvicorn
