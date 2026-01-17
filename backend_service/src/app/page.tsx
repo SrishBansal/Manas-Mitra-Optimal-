@@ -49,12 +49,10 @@ export default function ManasMitraChat() {
 
       const data = await response.json();
 
-      const val = data.reply || data.error || "I'm having trouble connecting right now. Please try again.";
-
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: val,
+        content: data.reply || "I'm having trouble connecting right now. Please try again.",
         timestamp: new Date(),
       };
 
@@ -97,49 +95,30 @@ export default function ManasMitraChat() {
           </div>
         )}
 
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence>
           {messages.map((msg) => (
             <motion.div
               key={msg.id}
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm relative group ${msg.role === 'user'
-                  ? 'bg-primary-500 text-white rounded-br-none'
-                  : msg.content.startsWith('System:') || msg.content.includes('trouble connecting')
-                    ? 'bg-red-50 text-red-800 border border-red-100 rounded-bl-none'
+                className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
+                    ? 'bg-primary-500 text-white rounded-br-none'
                     : 'bg-white text-calm-text border border-slate-100 rounded-bl-none'
                   }`}
               >
                 {msg.content}
-
-                {/* Retry Button for Errors */}
-                {msg.role === 'assistant' && (msg.content.startsWith('System:') || msg.content.includes('trouble connecting')) && (
-                  <button
-                    onClick={() => {
-                      const lastUserMsg = messages.slice().reverse().find(m => m.role === 'user');
-                      if (lastUserMsg) {
-                        setInput(lastUserMsg.content);
-                        // Optionally auto-submit or just let user click send
-                      }
-                    }}
-                    className="absolute -bottom-6 left-0 text-xs text-red-500 underline opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    Retry
-                  </button>
-                )}
               </div>
             </motion.div>
           ))}
 
           {isLoading && (
             <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               className="flex justify-start"
             >
               <div className="bg-white p-4 rounded-2xl rounded-bl-none border border-slate-100 shadow-sm flex items-center gap-2">
@@ -150,7 +129,7 @@ export default function ManasMitraChat() {
             </motion.div>
           )}
         </AnimatePresence>
-        <div ref={messagesEndRef} className="h-4" />
+        <div ref={messagesEndRef} />
       </main>
 
       {/* Input Area */}
