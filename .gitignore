@@ -95,3 +95,4 @@ yarn-error.log*
 # Build output
 build/
 dist/
+node_modules/
