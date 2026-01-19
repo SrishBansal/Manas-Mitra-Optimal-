@@ -2,7 +2,8 @@
 
 # Start the backend server in the background
 echo "Starting backend server..."
-cd "$(dirname "$0")/api"
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT_DIR/api"
 source ../venv/bin/activate
 uvicorn main:app --reload --port 8000 &
 BACKEND_PID=$!
@@ -12,7 +13,7 @@ sleep 3
 
 # Start the frontend in the background
 echo "Starting frontend..."
-cd "$(dirname "$0")/frontend"
+cd "$ROOT_DIR/frontend"
 npm install
 npm run dev &
 FRONTEND_PID=$!
