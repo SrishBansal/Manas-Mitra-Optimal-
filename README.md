@@ -123,3 +123,4 @@ print(tokenizer.decode(outputs[0], skip_special_tokens=True))
 ## License
 For research and educational purposes. Ensure compliance with local regulations and ethical guidelines for mental health support tools.
 # Manas-Mitra
+# Manas-Mitra-Optimal-
