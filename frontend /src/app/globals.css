@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+:root {
+  /* Calming Nature Palette - Light Mode */
+  --background: #f0fdfa;
+  /* Teal-50: Very soft mint/teal background */
+  --foreground: #334155;
+  /* Slate-700: Softer than black text */
+  --primary: #2dd4bf;
+  /* Teal-400: Soft but vibrant teal */
+  --primary-foreground: #ffffff;
+  --secondary: #ccfbf1;
+  /* Teal-100: Very light teal for secondary backgrounds */
+  --secondary-foreground: #115e59;
+  /* Teal-800: Deep teal for text on secondary */
+  --muted: #e2e8f0;
+  /* Slate-200 */
+  --muted-foreground: #64748b;
+  /* Slate-500 */
+  --accent: #99f6e4;
+  /* Teal-200 */
+  --accent-foreground: #134e4a;
+  --border: #cbd5e1;
+  --input: #e2e8f0;
+  --ring: #2dd4bf;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --error: #f87171;
+  --info: #38bdf8;
+
+  /* Chat specific colors - Soft & Calming */
+  --chat-bg: #ffffff;
+  --chat-user: #ccfbf1;
+  /* Teal-100 */
+  --chat-bot: #f0fdfa;
+  /* Teal-50 */
+  --chat-border: #99f6e4;
+  /* Teal-200 */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --primary: #14b8a6;
+  --primary-foreground: #ffffff;
+  --secondary: #0c4a6e;
+  --secondary-foreground: #bae6fd;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #06b6d4;
+  --accent-foreground: #ffffff;
+  --border: #334155;
+  --input: #334155;
+  --ring: #14b8a6;
+
+  --card: #1e293b;
+  --card-foreground: #f1f5f9;
+
+  --chat-bg: #1e293b;
+  --chat-user: #0c4a6e;
+  --chat-bot: #1e40af;
+  --chat-border: #334155;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-foreground);
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
