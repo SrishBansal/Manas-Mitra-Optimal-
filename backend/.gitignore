@@ -1,0 +1,99 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.env
+.venv
+
+# Training outputs
+outputs/
+checkpoints/
+*.ckpt
+*.pt
+*.bin
+*.pth
+*.safetensors
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Local development
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Project specific (add your own project specific files here)
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+
+# Frontend
+frontend/.next/
+frontend/node_modules/
+frontend/out/
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local development
+.DS_Store
+
+# Build output
+build/
+dist/
+node_modules/
+node_modules/
