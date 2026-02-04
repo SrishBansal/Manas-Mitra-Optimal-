@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           message: message,
           user_id: userId,
+          session_id: userId, // Use userId as session_id for conversation continuity
         }),
       });
 
