@@ -1,34 +1,56 @@
+import os
+import sys
+import logging
+import asyncio
+from enum import Enum
+from typing import List, Dict, Any, Optional, Literal
+
+# 1. FORCE OFFLINE FOR PYTORCH/TRANSFORMERS
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
+# 2. IMPORT SENTENCE_TRANSFORMERS FIRST TO AVOID WINDOWS DLL CLASH
+from sentence_transformers import SentenceTransformer
+import chromadb
+from chromadb.utils import embedding_functions
+from google import genai
+from google.genai import types as genai_types
+from google.genai import errors as genai_errors
+from dotenv import load_dotenv
+
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional, Literal
-from collections import defaultdict
-import torch
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, AutoModelForSequenceClassification, pipeline
-import logging
-import os
-import google.generativeai as genai
-from enum import Enum
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configure Gemini
-GENAI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GENAI_API_KEY:
-    genai.configure(api_key=GENAI_API_KEY)
-else:
-    logger.warning("GEMINI_API_KEY not found in environment variables.")
+# Load environment variables
+for env_path in [
+    os.path.abspath(os.path.join(os.path.dirname(__file__), ".env")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+]:
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
 
-# Global session storage for conversation history
-chat_sessions = defaultdict(lambda: None)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    logger.warning("Warning: GEMINI_API_KEY not found in environment!")
 
+# Initialize Gemini client (new SDK)
+gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
-app = FastAPI(title="Manas Mitra API", description="API for the Manas Mitra mental health chatbot")
+# Append scripts folder to path for safety check import
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "scripts")))
+try:
+    from safety import check_crisis
+except ImportError:
+    check_crisis = None
+
+app = FastAPI(title="Manas Mitra API", description="RAG + Gemini API backend for the Manas Mitra mental health chatbot")
 
 # CORS middleware to allow frontend to connect
 app.add_middleware(
@@ -39,29 +61,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Model configuration
+# Paths for ChromaDB and SentenceTransformer relative to backend/api/main.py
+current_dir = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.abspath(os.path.join(current_dir, "..", "chroma_db"))
+MODEL_PATH = os.path.abspath(os.path.join(current_dir, "..", "..", "all-MiniLM-L6-v2")).replace("\\", "/")
+
+# Initialize ChromaDB client and collection
+logger.info(f"Connecting to ChromaDB at: {DB_PATH}")
+chroma_client = chromadb.PersistentClient(path=DB_PATH)
+
+logger.info(f"Loading embedding function from: {MODEL_PATH}")
+embedding_func = embedding_functions.SentenceTransformerEmbeddingFunction(
+    model_name=MODEL_PATH,
+    device="cpu"
+)
+
+collection = chroma_client.get_or_create_collection(
+    name="cognitive_distortions",
+    embedding_function=embedding_func
+)
+
+# Emotion model configuration
 EMOTION_MODEL = "bhadresh-savani/distilbert-base-uncased-emotion"
-RESPONSE_MODEL = "google/flan-t5-small"
+try:
+    cache_dir = os.path.expanduser("~/.cache/huggingface/hub/models--bhadresh-savani--distilbert-base-uncased-emotion/snapshots")
+    if os.path.exists(cache_dir):
+        snapshots = os.listdir(cache_dir)
+        if snapshots:
+            EMOTION_MODEL = os.path.abspath(os.path.join(cache_dir, snapshots[0]))
+except Exception:
+    pass
+
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Initialize models
+# Load local emotion classification model
 try:
-    logger.info("Loading emotion classification model...")
-    emotion_tokenizer = AutoTokenizer.from_pretrained(EMOTION_MODEL)
-    emotion_model = AutoModelForSequenceClassification.from_pretrained(EMOTION_MODEL).to(DEVICE)
+    logger.info(f"Loading emotion classification model from: {EMOTION_MODEL} on {DEVICE}...")
+    is_local_emotion = os.path.exists(EMOTION_MODEL)
+    emotion_tokenizer = AutoTokenizer.from_pretrained(EMOTION_MODEL, local_files_only=is_local_emotion)
+    emotion_model = AutoModelForSequenceClassification.from_pretrained(EMOTION_MODEL, local_files_only=is_local_emotion).to(DEVICE)
     emotion_model.eval()
-    
-    # RESPONSE_MODEL is no longer needed as we use Gemini
-    # logger.info("Loading response generation model...")
-    # response_tokenizer = AutoTokenizer.from_pretrained(RESPONSE_MODEL)
-    # response_model = AutoModelForSeq2SeqLM.from_pretrained(RESPONSE_MODEL).to(DEVICE)
-    # response_model.eval()
-    
-    logger.info(f"Models loaded on {DEVICE}")
-    
+    logger.info("Emotion model loaded successfully.")
 except Exception as e:
-    logger.error(f"Error loading models: {str(e)}")
-    raise
+    logger.error(f"Error loading emotion model: {str(e)}")
+    emotion_tokenizer = None
+    emotion_model = None
 
 class Emotion(str, Enum):
     SADNESS = "sadness"
@@ -78,7 +122,6 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     user_id: Optional[str] = None
-    session_id: str = "default"
 
 class ChatResponse(BaseModel):
     emotion: str
@@ -87,296 +130,116 @@ class ChatResponse(BaseModel):
 @app.get("/")
 async def health_check():
     return {
-        "status": "healthy", 
-        "models": {
-            "emotion": EMOTION_MODEL,
-            "response": RESPONSE_MODEL
-        },
+        "status": "healthy",
+        "architecture": "RAG + Gemini API",
+        "chroma_db_path": DB_PATH,
+        "embedding_model": MODEL_PATH,
+        "gemini_configured": bool(os.getenv("GEMINI_API_KEY")),
+        "emotion_model": EMOTION_MODEL,
         "device": DEVICE
     }
 
 def detect_emotion(text: str) -> str:
-    """Detect the emotion in the given text."""
+    """Detect the emotion in the given text using the local classification model."""
+    if emotion_model is None or emotion_tokenizer is None:
+        return "neutral"
     try:
         inputs = emotion_tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(DEVICE)
         with torch.no_grad():
             outputs = emotion_model(**inputs)
         
-        # Get the predicted emotion
         predicted_class_idx = torch.argmax(outputs.logits, dim=1).item()
         emotion = emotion_model.config.id2label[predicted_class_idx]
-        
         return emotion.lower()
     except Exception as e:
         logger.error(f"Error in emotion detection: {str(e)}")
         return "neutral"
 
-def generate_response(message: str, emotion: str, session_id: str) -> str:
-    """Generate a response based on the message and detected emotion with conversation history."""
-    try:
-        if not GENAI_API_KEY:
-            return "Server configuration error: Gemini API Key missing."
-        
-        # Enhanced empathetic system prompt for Manas Mitra with psychological guidance
-        system_instruction = """You are Manas Mitra, a compassionate peer counselor for students facing mental health challenges. Your role is to provide compassionate, non-judgmental listening and emotional support.
+def _call_gemini(system_instruction: str, message: str) -> str:
+    """Synchronous Gemini API call — run via asyncio.to_thread."""
+    if not gemini_client:
+        return "I'm here to support you, but my conversational engine is currently offline. Please configure the GEMINI_API_KEY in the environment."
 
-EMOTION-SPECIFIC RESPONSE GUIDELINES:
-
-When the user is feeling STRESS:
-- Acknowledge the pressure they're under
-- Help them break down what feels overwhelming
-- Offer grounding: "Let's take this one step at a time"
-- Suggest prioritization or small breaks if appropriate
-- Example: "That sounds like a lot on your plate. What feels most urgent right now?"
-
-When the user is feeling ANXIETY:
-- Validate that anxiety is real and difficult
-- Gently bring them to the present moment
-- Avoid future-focused worry spirals
-- If appropriate, ask: "What can you control right now?"
-- Example: "I hear how worried you are. What's the biggest fear in this moment?"
-
-When the user is feeling SADNESS:
-- Sit with them in the feeling (don't rush to fix it)
-- Offer companionship: "You're not alone in this"
-- Acknowledge their pain without dismissing it
-- Provide hope carefully: "This feeling won't last forever"
-- Example: "That sounds really painful. I'm here with you."
-
-When the user is feeling ANGER:
-- Accept their anger without judgment
-- Don't minimize what upset them
-- Help them identify what's beneath the anger
-- If safe, suggest healthy release (walking, journaling)
-- Example: "It makes sense you're angry. What happened?"
-
-When the user is feeling LONELINESS:
-- Affirm their need for connection
-- Remind them they matter
-- Gently explore who they might reach out to
-- Be their companion in this moment
-- Example: "Feeling alone is so hard. You matter, and I'm here right now."
-
-When the user is feeling JOY or LOVE:
-- Celebrate with them genuinely
-- Encourage them to savor the moment
-- Ask what's contributing to this feeling
-- Don't immediately pivot to problems
-- Example: "I love hearing that! What's making you feel this way?"
-
-ACTIVE LISTENING PATTERN (use naturally, not rigidly):
-
-Structure your responses with this three-part framework:
-
-1. REFLECTION: Mirror back what you're hearing
-   - "It sounds like you're dealing with a lot right now"
-   - "I hear that this situation feels overwhelming"
-   - "What I'm hearing is that you feel stuck"
-
-2. VALIDATION: Normalize their experience
-   - "That's completely understandable"
-   - "Anyone in your position would feel this way"
-   - "Your feelings make sense given what you're going through"
-   - "It's okay to feel this way"
-
-3. GENTLE SUPPORT: Offer presence without pressure
-   - "You don't have to face this alone"
-   - "I'm here with you"
-   - "I'm glad you're sharing this with me"
-
-Vary your language naturally. Don't repeat the same phrases. Make it conversational, not formulaic.
-
-GENTLE COGNITIVE REFRAMING (only when contextually appropriate):
-
-When someone is catastrophizing:
-- "This moment is hard, but it doesn't define your whole story"
-- "You've gotten through difficult times before"
-
-When someone feels worthless due to performance:
-- "Your value isn't measured by grades or achievements"
-- "You are more than this one outcome"
-- "One test doesn't determine your worth"
-
-When someone feels hopeless:
-- "Feelings can feel permanent when they're intense, but they do shift"
-- "This pain you're feeling right now won't always be this heavy"
-
-When someone is overwhelmed:
-- "You don't have to solve everything today"
-- "What's one small thing that feels manageable?"
-
-CRITICAL RULE: Always validate feelings FIRST, reframe SECOND. Never use reframing to dismiss or minimize their pain.
-
-COPING SUGGESTIONS (offer sparingly, only when relevant):
-
-When appropriate, you may suggest ONE of these:
-
-- Deep breathing: "Sometimes taking a few slow, deep breaths can help reset your nervous system"
-- Grounding: "Try noticing 5 things you can see right now (it can help when anxiety spikes)"
-- Journaling: "Writing down what you're feeling might help you sort through it"
-- Movement: "A short walk, even 5 minutes, can shift your headspace"
-- Connection: "Is there someone you trust you could talk to about this?"
-- Break: "Sometimes stepping away for a few minutes helps"
-
-RULES:
-- Maximum ONE suggestion per response
-- Only suggest when it fits naturally into the conversation
-- Never pressure them with "you should try this now"
-- Accept if they say it won't work
-- Don't lead with suggestions (lead with empathy)
-
-CONVERSATION CONTINUITY (vary these naturally):
-
-End responses with open invitations when appropriate:
-- "What's been weighing on you the most?"
-- "Would you like to talk more about this?"
-- "I'm here if you want to share more"
-- "What do you need most right now?"
-- "How are you feeling as we talk about this?"
-- "What part of this feels hardest?"
-
-Sometimes, simply end with empathy (no question needed):
-- "I'm here with you"
-- "You're not alone in this"
-- "I hear you"
-
-AVOID:
-- Repetitive phrases like "I'm here for you" in every single response
-- Forced questions when the moment calls for sitting in silence
-- Ending every response with "Let me know if you need anything"
-
-TONE AND PRESENCE:
-
-You should feel like:
-- A calm, patient friend who genuinely cares
-- Someone who listens more than they solve
-- A companion in difficulty, not a fix-it machine
-- Emotionally present and attuned to their words
-- A peer, not an authority
-
-You should NEVER sound like:
-- A chatbot following a script
-- A self-help book with generic wisdom
-- A checklist asking "Have you tried...?"
-- An authority figure giving orders
-- A therapist using clinical jargon (no CBT, DSM, diagnosis terms)
-
-Keep responses:
-- 2-4 sentences, not essays
-- Conversational and natural, not formal
-- Warm and genuine, not performative
-- Specific to what they shared, not generic templates
-- Human (use contractions, natural phrasing)
-
-SAFETY AND BOUNDARIES:
-
-If someone mentions self-harm, suicide, harming others, or severe crisis needing immediate help:
-
-Response pattern:
-1. Take them seriously: "I hear how much pain you're in"
-2. Affirm you care: "I'm really glad you told me this"
-3. Gently redirect: "This sounds like something that needs more support than I can provide. Please reach out to a crisis hotline, counselor, or trusted adult"
-4. Stay present: "I'm still here if you want to talk about how you're feeling"
-
-Remember:
-- You are NOT a therapist
-- You are NOT a crisis line
-- You are NOT a medical professional
-- You ARE a supportive peer presence
-- You DO care deeply about their wellbeing
-
-RESPONSE LENGTH AND STRUCTURE:
-
-Default: 2-4 sentences per response
-- Lead with empathy/reflection (1 sentence)
-- Add validation or gentle support (1 sentence)
-- Close with question or presence (1 sentence)
-
-Avoid:
-- Long paragraphs
-- Multiple questions in one response
-- Lists of advice
-- Over-explaining
-
-Match their energy:
-- If they share a lot, you can respond with slightly more
-- If they're brief, keep it concise
-- If they're in crisis, be clear and direct
-
-Your goal is to make users feel heard, understood, and supported on their mental health journey."""
-        
-        # Create or retrieve chat session for conversation history
-        if chat_sessions[session_id] is None:
-            model = genai.GenerativeModel(
-                model_name='gemini-flash-latest',
-                system_instruction=system_instruction
+    models_to_try = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-2.5-flash-lite"]
+    last_error = None
+    for model_name in models_to_try:
+        try:
+            response = gemini_client.models.generate_content(
+                model=model_name,
+                contents=message,
+                config=genai_types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=0.7,
+                    max_output_tokens=500,
+                )
             )
-            chat_sessions[session_id] = model.start_chat(history=[])
-        
-        chat = chat_sessions[session_id]
-        
-        # PROBLEM 5 FIX: Integrate emotion context into the message
-        # Add emotion as subtle context prefix to help guide the response tone
-        contextualized_message = f"[User seems to be feeling {emotion}] {message}"
-        
-        # Send message with emotion context
-        response = chat.send_message(contextualized_message)
-        
-        # PROBLEM 6 FIX: Response validation
-        response_text = response.text.strip() if response and response.text else ""
-        
-        # Check 1: Empty or missing response
-        if not response_text:
-            logger.warning(f"Empty response received for session {session_id}")
-            return "I'm having trouble processing that. Could you share a bit more?"
-        
-        # Check 2: Prompt leakage detection
-        leakage_indicators = [
-            "You are Manas Mitra",
-            "You are an empathetic",
-            "Core Principles:",
-            "Conversation Style:",
-            "system_instruction",
-            "User says:",
-            "[User seems to be feeling"
-        ]
-        
-        if any(indicator in response_text for indicator in leakage_indicators):
-            logger.error(f"Prompt leakage detected in session {session_id}: {response_text[:100]}")
-            return "I'm here to listen. What's on your mind?"
-        
-        # Check 3: User message echo detection
-        # Check if the response contains a large portion of the original user message
-        if len(message) > 10 and message.lower() in response_text.lower():
-            logger.warning(f"User message echo detected in session {session_id}")
-            return "I hear you. Can you tell me more about how you're feeling?"
-        
-        return response_text
+            return response.text.strip()
+        except Exception as e:
+            err_str = str(e)
+            if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                logger.warning(f"Rate limit hit on {model_name}, trying next model...")
+                last_error = e
+                continue
+            logger.error(f"Gemini error on {model_name}: {err_str}")
+            last_error = e
+            continue
+    logger.error(f"All Gemini models failed: {last_error}")
+    return "I'm here for you, but I'm experiencing high demand right now. Please try again in a minute."
+
+async def generate_response(message: str, emotion: str) -> str:
+    """Generate a response using RAG retrieval and Gemini API."""
+    try:
+        if check_crisis is not None:
+            crisis_reply = check_crisis(message, locale="en-IN")
+            if crisis_reply is not None:
+                return crisis_reply
+
+        # 1. RETRIEVE closest matching distortion from ChromaDB
+        try:
+            results = collection.query(query_texts=[message], n_results=1)
+            if results and results['metadatas'] and len(results['metadatas'][0]) > 0:
+                metadata = results['metadatas'][0][0]
+                distortion_name = metadata.get("distortion", "General Support")
+                definition = metadata.get("definition", "No definition available.")
+                framework = metadata.get("framework", "Listen actively and validate feelings.")
+            else:
+                distortion_name = "General Support"
+                definition = "No specific distortion detected."
+                framework = "Listen empathetically, validate feelings, and respond with warmth."
+        except Exception as e:
+            logger.error(f"Error querying ChromaDB: {e}")
+            distortion_name = "General Support"
+            definition = "No specific distortion detected."
+            framework = "Listen empathetically, validate feelings, and respond with warmth."
+
+        # 2. CONSTRUCT dynamic system prompt
+        system_instruction = (
+            "You are Manas Mitra, a compassionate, empathetic, and supportive mental health companion. "
+            "Your goal is to listen actively, validate the user's feelings, and respond with warmth, kindness, and understanding. "
+            "Do not offer clinical diagnoses or prescribe medication. Keep your responses concise (normally 2-3 sentences).\n\n"
+            "A cognitive distortion has been retrieved from the user's input to guide your response:\n"
+            f"- Detected Distortion: {distortion_name}\n"
+            f"- Clinical Definition: {definition}\n"
+            f"- Therapeutic Framework: {framework}\n\n"
+            "Apply this framework gently. If the user is greeting you, respond warmly without challenging a distortion."
+        )
+
+        # 3. CALL Gemini API (blocking call, offloaded to thread)
+        return await asyncio.to_thread(_call_gemini, system_instruction, message)
 
     except Exception as e:
-        logger.error(f"Error generating response: {str(e)}")
+        logger.error(f"Error generating response: {e}")
         return "I'm sorry, I'm having trouble processing your request right now. Could you try again later?"
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(chat_request: ChatRequest):
     try:
-        # Get the latest user message and session ID
         user_message = chat_request.message
-        session_id = chat_request.session_id
-        
-        # Detect emotion from the user's message
         emotion = detect_emotion(user_message)
-        
-        # Generate a response based on the message, emotion, and session
-        reply = generate_response(user_message, emotion, session_id)
-        
-        return {
-            "emotion": emotion,
-            "reply": reply
-        }
-        
+        reply = await generate_response(user_message, emotion)
+        return {"emotion": emotion, "reply": reply}
     except Exception as e:
-        logger.error(f"Error in chat endpoint: {str(e)}")
+        logger.error(f"Error in chat endpoint: {e}")
         raise HTTPException(
             status_code=500,
             detail="Sorry, I'm having trouble processing your request. Please try again."

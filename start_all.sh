@@ -4,7 +4,7 @@
 echo "Starting backend server..."
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR/api"
-source ../venv/bin/activate
+source venv/bin/activate
 uvicorn main:app --reload --port 8000 &
 BACKEND_PID=$!
 

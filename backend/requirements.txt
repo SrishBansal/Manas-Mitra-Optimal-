@@ -1,11 +1,8 @@
 # Core ML
-accelerate>=0.28.0
-bitsandbytes>=0.41.0
-datasets>=2.18.0
-peft>=0.12.0
-sentencepiece>=0.2.0
 torch>=2.2.0
-transformers>=4.38.0
+sentence-transformers
+chromadb
+google-genai
 
 # Utilities
 pandas>=2.2.0

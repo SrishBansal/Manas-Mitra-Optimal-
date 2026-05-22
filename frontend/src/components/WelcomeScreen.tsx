@@ -148,8 +148,8 @@ export default function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
               Important Safety Information
             </h3>
             <p className="text-amber-700 dark:text-amber-300 text-sm">
-              Manas Mitra is designed to provide support and guidance, but it's not a replacement for professional medical care.
-              If you're experiencing a mental health crisis or having thoughts of self-harm, please contact emergency services
+              Manas Mitra is designed to provide support and guidance, but it&apos;s not a replacement for professional medical care.
+              If you&apos;re experiencing a mental health crisis or having thoughts of self-harm, please contact emergency services
               or a mental health professional immediately.
             </p>
           </div>

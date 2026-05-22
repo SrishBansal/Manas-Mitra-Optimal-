@@ -480,8 +480,8 @@ export default function ProfessionalReferral() {
               <li>• Check if they accept your insurance (ESI, CGHS, Ayushman Bharat)</li>
               <li>• Verify language preferences (Hindi, Marathi, English)</li>
               <li>• Read reviews and ask for recommendations</li>
-              <li>• Schedule a consultation to see if it's a good fit</li>
-              <li>• Don't hesitate to try different professionals</li>
+              <li>• Schedule a consultation to see if it&apos;s a good fit</li>
+              <li>• Don&apos;t hesitate to try different professionals</li>
             </ul>
           </div>
           

@@ -14,7 +14,7 @@ interface BreathingExercise {
     exhale: number;
     pause: number;
   };
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }
 
@@ -24,7 +24,7 @@ interface Meditation {
   description: string;
   duration: number; // in minutes
   type: 'mindfulness' | 'body-scan' | 'loving-kindness' | 'progressive-relaxation';
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
   steps?: { title: string; instruction: string; duration: number }[]; // duration in seconds
 }

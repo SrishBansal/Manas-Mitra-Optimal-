@@ -357,7 +357,7 @@ export default function ChatInterface({ onTriggerAssessment, onTriggerCrisis }: 
         
         <div className="mt-2 text-xs text-slate-600 dark:text-slate-400">
           <Heart className="h-3 w-3 inline mr-1" />
-          Your conversations are anonymous and secure. If you're in crisis, please contact emergency services.
+          Your conversations are anonymous and secure. If you&apos;re in crisis, please contact emergency services.
         </div>
       </div>
     </div>

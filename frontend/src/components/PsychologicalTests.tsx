@@ -22,7 +22,7 @@ interface Test {
   description: string;
   questions: Question[];
   maxScore: number;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }
 
@@ -385,7 +385,7 @@ export default function PsychologicalTests() {
               </h3>
               <p className="text-amber-700 dark:text-amber-300 text-sm">
                 These assessments are for informational purposes only and are not a substitute for professional diagnosis. 
-                If you're concerned about your mental health, please consult with a qualified mental health professional.
+                If you&apos;re concerned about your mental health, please consult with a qualified mental health professional.
               </p>
             </div>
           </div>

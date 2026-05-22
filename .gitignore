@@ -98,3 +98,24 @@ dist/
 node_modules/
 node_modules/
 .DS_Store
+
+# Local ML models (large binary files — do not commit)
+all-MiniLM-L6-v2/
+outputs/
+
+# Vector database (generated locally via seed_database.py)
+backend/chroma_db/
+test_db/
+
+# Virtual environments
+api/venv/
+api/out.log
+api/output.log
+api/output.txt
+
+# Test / scratch scripts
+api/run_tests.py
+api/test_rag.py
+api/test_import.py
+api/test_tokenizer.py
+test_seed.py
