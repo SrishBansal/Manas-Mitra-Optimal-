@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import asyncio
+import traceback
 from enum import Enum
 from typing import List, Dict, Any, Optional, Literal
 
@@ -38,9 +39,13 @@ load_dotenv(dotenv_path)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
     logger.warning("Warning: GEMINI_API_KEY not found in environment!")
+else:
+    logger.info(f"GEMINI_API_KEY found. Starts with: {GEMINI_API_KEY[:4]}... Length: {len(GEMINI_API_KEY)}")
 
 # Initialize Gemini client (new SDK)
 gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+if gemini_client:
+    logger.info("Gemini client successfully initialized.")
 
 # Append scripts and local api folder to path for safety check import
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts")))
@@ -186,13 +191,16 @@ def get_local_fallback(message: str) -> Dict[str, str]:
 
 def _call_gemini(system_instruction: str, message: str) -> str:
     """Synchronous Gemini API call — run via asyncio.to_thread."""
+    logger.info(f"Initiating Gemini API call for message: '{message[:50]}...'")
     if not gemini_client:
+        logger.error("gemini_client is None! Falling back immediately.")
         return json.dumps(get_local_fallback(message))
 
     models_to_try = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-2.5-flash-lite"]
     last_error = None
     for model_name in models_to_try:
         try:
+            logger.info(f"Attempting to call Gemini using model: {model_name}")
             response = gemini_client.models.generate_content(
                 model=model_name,
                 contents=message,
@@ -217,23 +225,25 @@ def _call_gemini(system_instruction: str, message: str) -> str:
                     }
                 )
             )
+            logger.info(f"Successfully generated response with {model_name}")
             return response.text.strip()
         except Exception as e:
             err_str = str(e)
+            logger.error(f"Gemini API Exception on model {model_name}: {err_str}")
+            traceback.print_exc()
+            
             if "safety" in err_str.lower() or "blocked" in err_str.lower():
-                logger.warning(f"Safety block triggered on {model_name}.")
+                logger.warning(f"Safety block explicitly triggered on {model_name}. Returning safe fallback.")
                 return json.dumps({
                     "emotion": "fear",
                     "reply": "I'm concerned about what you're sharing. Your safety is the most important thing right now. Please reach out to a mental health professional immediately. You can call the Tele-MANAS helpline at 14416 or 1-800-91-4416. You're not alone, and there are people who want to help you."
                 })
-            if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
-                logger.warning(f"Rate limit hit on {model_name}, trying next model...")
-                last_error = e
-                continue
-            logger.error(f"Gemini error on {model_name}: {err_str}")
+            
+            logger.warning(f"Moving to next model after failure on {model_name}")
             last_error = e
             continue
-    logger.error(f"All Gemini models failed: {last_error}")
+            
+    logger.error(f"All Gemini models failed. Last error: {last_error}. Activating local fallback.")
     
     # Generate dynamic, high-quality intent fallback instead of static crisis apology
     fallback_data = get_local_fallback(message)
