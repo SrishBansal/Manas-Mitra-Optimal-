@@ -39,7 +39,7 @@ const responseTemplates = {
 // Crisis keywords that require immediate professional referral
 const crisisKeywords = [
   'suicide', 'kill myself', 'end it all', 'not worth living', 'want to die',
-  'self harm', 'hurt myself', 'crisis', 'emergency', 'help me', 'end my life',
+  'self harm', 'self-harm', 'harm myself', 'harm', 'hurt myself', 'crisis', 'emergency', 'help me', 'end my life',
   'better off dead', 'no point', 'give up', 'hopeless', 'worthless'
 ];
 
@@ -110,6 +110,20 @@ export async function POST(request: NextRequest) {
     const intent = detectIntent(message);
     const isCrisis = intent === 'crisis';
     const needsAssessment = intent === 'assessment';
+
+    // Local Fail-Safe Safety Hard-Block: Serve helpline templates immediately
+    if (isCrisis) {
+      const responseText = generateResponse('crisis', message);
+      return NextResponse.json({
+        response: responseText,
+        intent,
+        isCrisis,
+        needsAssessment,
+        emotion: 'fear',
+        timestamp: new Date().toISOString(),
+        userId: userId || 'anonymous'
+      });
+    }
 
     let responseText = "";
     let emotion = "neutral";
