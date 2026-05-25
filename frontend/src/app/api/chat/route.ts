@@ -114,9 +114,11 @@ export async function POST(request: NextRequest) {
     let responseText = "";
     let emotion = "neutral";
 
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
     try {
-      // Connect to Python Backend
-      const backendRes = await fetch("http://127.0.0.1:8000/chat", {
+      // Connect to Python Backend (dynamic URL)
+      const backendRes = await fetch(`${backendUrl}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -142,7 +144,7 @@ export async function POST(request: NextRequest) {
       console.error("Failed to connect to backend:", backendError);
       return NextResponse.json(
         {
-          response: `[System Error] Connection to backend failed: ${errMsg}. URL: http://127.0.0.1:8000/chat`,
+          response: `[System Error] Connection to backend failed: ${errMsg}. URL: ${backendUrl}/chat`,
           intent: 'error',
           isCrisis: false,
           needsAssessment: false,
