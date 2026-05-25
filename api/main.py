@@ -40,12 +40,16 @@ if not GEMINI_API_KEY:
 # Initialize Gemini client (new SDK)
 gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
-# Append scripts folder to path for safety check import
+# Append scripts and local api folder to path for safety check import
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts")))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 try:
     from safety import check_crisis
 except ImportError:
-    check_crisis = None
+    try:
+        from api.safety import check_crisis
+    except ImportError:
+        check_crisis = None
 
 app = FastAPI(title="Manas Mitra API", description="RAG + Gemini API backend for the Manas Mitra mental health chatbot")
 
