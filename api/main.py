@@ -22,6 +22,7 @@ from dotenv import load_dotenv
 
 import json
 import re
+import random
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -131,34 +132,56 @@ def get_local_fallback(message: str) -> Dict[str, str]:
     if re.search(r'\b(hi|hello|hey|hola|greetings|namaste)\b', t):
         return {
             "emotion": "joy",
-            "reply": "Hello! I'm here to listen and support you. How are you feeling today?"
+            "reply": random.choice([
+                "Hello! I'm here to listen and support you. How are you feeling today?",
+                "Hi there. I'm your AI mental health companion. What's on your mind?",
+                "Welcome! This is a safe space. How can I support you today?"
+            ])
         }
     
     # Check for anxiety / worry / panic
     if re.search(r'\b(anxiety|anxious|worry|worried|panic|scared|fear)\b', t):
         return {
             "emotion": "fear",
-            "reply": "I understand that anxiety can feel overwhelming, and it's completely brave of you to share. Let's work together to explore what is causing you the most worry right now. What has been on your mind?"
+            "reply": random.choice([
+                "I understand that anxiety can feel overwhelming. Let's work together to explore what is causing you the most worry right now.",
+                "It's completely brave of you to share your fears. What specific situations have been triggering this anxiety?",
+                "Feeling anxious is tough, but you are not alone. What has been on your mind lately?"
+            ])
         }
         
     # Check for depression / sadness
     if re.search(r'\b(sad|depressed|depression|lonely|hopeless|empty|cry|tough phase)\b', t):
         return {
             "emotion": "sadness",
-            "reply": "I hear you, and I want you to know that your feelings are completely valid. Going through a tough phase can make everything feel heavier. I am here to listen—what is a small thing that has brought you even a little comfort recently?"
+            "reply": random.choice([
+                "I hear you, and your feelings are completely valid. What is a small thing that has brought you even a little comfort recently?",
+                "Going through a tough phase can make everything feel heavier. I am here to listen without judgment.",
+                "I'm sorry you are feeling this way. It's okay to feel sad. Is there anything specific that triggered these feelings?"
+            ])
         }
         
     # Check for stress / feeling overwhelmed
     if re.search(r'\b(stress|stressed|overwhelmed|pressure|tired|exhausted)\b', t):
         return {
             "emotion": "sadness",
-            "reply": "It sounds like you are carrying a lot on your shoulders right now, and that can be incredibly exhausting. Let's look at this together. What specific situations are causing you the most pressure today?"
+            "reply": random.choice([
+                "It sounds like you are carrying a lot on your shoulders right now. What specific situations are causing you the most pressure today?",
+                "Feeling overwhelmed can be incredibly exhausting. Let's take it one step at a time. What's the biggest stressor for you right now?",
+                "You don't have to carry this stress alone. I'm here to support you. Can you tell me more about what's overwhelming you?"
+            ])
         }
         
     # Default general fallback
     return {
         "emotion": "neutral",
-        "reply": "Thank you for sharing that with me. I'm here to listen and support you through whatever you are experiencing. Can you tell me a bit more about what's on your mind?"
+        "reply": random.choice([
+            "Thank you for sharing that with me. I'm here to listen and support you. Can you tell me a bit more about what's on your mind?",
+            "I hear what you're saying, and I appreciate you opening up. How can I best support you in this moment?",
+            "Your experiences are valid. I'm here to help you work through whatever you're facing.",
+            "It sounds like you are going through a lot. Please feel free to share more if you're comfortable.",
+            "I'm here for you. What support do you feel you need right now?"
+        ])
     }
 
 def _call_gemini(system_instruction: str, message: str) -> str:
