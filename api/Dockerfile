@@ -18,6 +18,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 RUN mkdir -p /home/user/app/.cache && chmod -R 777 /home/user/app/.cache
 ENV HF_HOME=/home/user/app/.cache/huggingface
 
+# Pre-download and bake the embedding model into the image layers during build time
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('intfloat/multilingual-e5-small')"
+
 # Copy the rest of the backend code
 COPY --chown=user:user . .
 
