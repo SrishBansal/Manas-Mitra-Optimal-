@@ -23,9 +23,9 @@ const responseTemplates = {
     "Let's work together to find ways to reduce your stress. What relaxation techniques have you tried before?"
   ],
   crisis: [
-    "I'm concerned about what you're sharing. Your safety is the most important thing right now. Please reach out to a mental health professional immediately. You can call the National Suicide Prevention Lifeline at 988, or contact your local emergency services. You're not alone, and there are people who want to help you.",
-    "Your safety is my top priority. If you're having thoughts of self-harm, please contact emergency services immediately at 911 or the National Suicide Prevention Lifeline at 988. There are people who care about you and want to help.",
-    "I'm worried about you. Please reach out to a crisis helpline right now. You can call 988 for the Suicide & Crisis Lifeline, or text HOME to 741741 for the Crisis Text Line. You don't have to face this alone."
+    "I'm concerned about what you're sharing. Your safety is the most important thing right now. Please reach out to a mental health professional immediately. You can call the Tele-MANAS helpline at 14416 or 1-800-91-4416. You're not alone, and there are people who want to help you.",
+    "Your safety is my top priority. If you're having thoughts of self-harm, please contact emergency services immediately at 112 or the KIRAN helpline at 1800-599-0019. There are people who care about you and want to help.",
+    "I'm worried about you. Please reach out to a crisis helpline right now. You can call 1800-599-0019 for the KIRAN helpline, or 14416 for Tele-MANAS. You don't have to face this alone."
   ],
   general: [
     "I'm here to listen and support you. Can you tell me more about what you're experiencing?",

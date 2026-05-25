@@ -15,8 +15,8 @@ def seed_database():
     
     client = chromadb.PersistentClient(path=DB_PATH)
     
-    # Initialize all-MiniLM-L6-v2 embedding function
-    MODEL_PATH = os.path.abspath(os.path.join(current_dir, "..", "..", "all-MiniLM-L6-v2")).replace("\\", "/")
+    # Initialize multilingual-e5-small embedding function
+    MODEL_PATH = os.path.abspath(os.path.join(current_dir, "..", "..", "multilingual-e5-small")).replace("\\", "/")
     print(f"Loading embedding function from local path: {MODEL_PATH} on CPU...")
     embedding_func = embedding_functions.SentenceTransformerEmbeddingFunction(
         model_name=MODEL_PATH,

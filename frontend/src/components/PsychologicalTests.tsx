@@ -40,7 +40,7 @@ export default function PsychologicalTests() {
       description: 'Evaluate your anxiety levels and identify areas of concern',
       maxScore: 21,
       icon: AlertTriangle,
-      color: 'text-orange-600 dark:text-orange-400',
+      color: 'text-primary',
       questions: [
         { id: 1, text: 'I feel nervous, anxious, or on edge', category: 'anxiety' },
         { id: 2, text: 'I am not able to stop or control worrying', category: 'anxiety' },
@@ -57,7 +57,7 @@ export default function PsychologicalTests() {
       description: 'Generalized Anxiety Disorder 7-item scale. Timeframe: last 2 weeks.',
       maxScore: 21,
       icon: AlertTriangle,
-      color: 'text-orange-600 dark:text-orange-400',
+      color: 'text-primary',
       questions: [
         { id: 1, text: 'Feeling nervous, anxious, or on edge', category: 'anxiety' },
         { id: 2, text: 'Not being able to stop or control worrying', category: 'anxiety' },
@@ -74,7 +74,7 @@ export default function PsychologicalTests() {
       description: 'Patient Health Questionnaire 7-item depression screener. Timeframe: last 2 weeks.',
       maxScore: 21,
       icon: Heart,
-      color: 'text-blue-600 dark:text-blue-400',
+      color: 'text-primary',
       questions: [
         { id: 1, text: 'Little interest or pleasure in doing things', category: 'depression' },
         { id: 2, text: 'Feeling down, depressed, or hopeless', category: 'depression' },
@@ -91,7 +91,7 @@ export default function PsychologicalTests() {
       description: '12-item GHQ screening for general psychological distress. Timeframe: recent weeks.',
       maxScore: 36,
       icon: TrendingUp,
-      color: 'text-red-600 dark:text-red-400',
+      color: 'text-primary',
       questions: [
         { id: 1, text: 'Been able to concentrate on what you’re doing', category: 'general' },
         { id: 2, text: 'Lost much sleep over worry', category: 'general' },
@@ -113,7 +113,7 @@ export default function PsychologicalTests() {
       description: 'Assess your mood and identify signs of depression',
       maxScore: 27,
       icon: Heart,
-      color: 'text-blue-600 dark:text-blue-400',
+      color: 'text-primary',
       questions: [
         { id: 1, text: 'Little interest or pleasure in doing things', category: 'depression' },
         { id: 2, text: 'Feeling down, depressed, or hopeless', category: 'depression' },
@@ -132,7 +132,7 @@ export default function PsychologicalTests() {
       description: 'Measure your current stress levels and coping strategies',
       maxScore: 40,
       icon: TrendingUp,
-      color: 'text-red-600 dark:text-red-400',
+      color: 'text-primary',
       questions: [
         { id: 1, text: 'I feel overwhelmed by my responsibilities', category: 'stress' },
         { id: 2, text: 'I have difficulty concentrating due to stress', category: 'stress' },
@@ -359,7 +359,7 @@ export default function PsychologicalTests() {
             <ul className="space-y-3">
               {testResults.recommendations.map((recommendation, index) => (
                 <li key={index} className="flex items-start space-x-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <CheckCircle className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
                   <span className="text-slate-700 dark:text-slate-300">{recommendation}</span>
                 </li>
               ))}
@@ -369,7 +369,7 @@ export default function PsychologicalTests() {
           <div className="text-center">
             <button
               onClick={resetTest}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg font-medium transition-colors"
             >
               Take Another Assessment
             </button>
@@ -410,7 +410,7 @@ export default function PsychologicalTests() {
           <div className="mb-8">
             <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 mb-4">
               <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                className="bg-primary h-2 rounded-full transition-all duration-300"
                 style={{ width: `${((currentQuestion + 1) / currentTest.questions.length) * 100}%` }}
               />
             </div>
@@ -428,13 +428,13 @@ export default function PsychologicalTests() {
                   onClick={() => handleAnswerSelect(value)}
                   className={`w-full p-4 rounded-lg border-2 transition-colors text-left ${
                     answers[currentQuestionData?.id || 0] === value
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                      ? 'border-primary bg-primary/10'
                       : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
                     {answers[currentQuestionData?.id || 0] === value ? (
-                      <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      <CheckCircle className="h-5 w-5 text-primary" />
                     ) : (
                       <Circle className="h-5 w-5 text-slate-400" />
                     )}
@@ -464,7 +464,7 @@ export default function PsychologicalTests() {
               <button
                 onClick={finishTest}
                 disabled={answers[currentQuestionData?.id || 0] === undefined}
-                className="bg-green-600 hover:bg-green-700 disabled:bg-slate-400 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+                className="bg-success hover:bg-success/90 disabled:bg-muted text-primary-foreground px-6 py-2 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
               >
                 Finish Assessment
               </button>
@@ -472,7 +472,7 @@ export default function PsychologicalTests() {
               <button
                 onClick={nextQuestion}
                 disabled={answers[currentQuestionData?.id || 0] === undefined}
-                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+                className="flex items-center space-x-2 bg-primary hover:bg-primary/90 disabled:bg-muted text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
               >
                 <span>Next</span>
                 <ArrowRight className="h-4 w-4" />
@@ -525,7 +525,7 @@ export default function PsychologicalTests() {
             
             <button
               onClick={() => setSelectedTest(test.id)}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-2 rounded-lg font-medium transition-colors"
             >
               Start Assessment
             </button>
@@ -533,9 +533,9 @@ export default function PsychologicalTests() {
         ))}
       </div>
 
-      <div className="mt-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-8 border border-blue-200 dark:border-blue-800">
+      <div className="mt-12 bg-primary/10 rounded-2xl p-8 border border-primary/20">
         <div className="text-center">
-          <Brain className="h-12 w-12 text-blue-600 dark:text-blue-400 mx-auto mb-4" />
+          <Brain className="h-12 w-12 text-primary mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">
             About These Assessments
           </h2>

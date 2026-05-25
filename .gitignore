@@ -101,6 +101,9 @@ node_modules/
 
 # Local ML models (large binary files — do not commit)
 all-MiniLM-L6-v2/
+multilingual-e5-small/
+multilingual-MiniLM-L12-v2/
+bge-m3/
 outputs/
 
 # Vector database (generated locally via seed_database.py)

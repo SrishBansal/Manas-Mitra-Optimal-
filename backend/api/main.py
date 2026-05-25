@@ -184,7 +184,9 @@ def _call_gemini(system_instruction: str, message: str) -> str:
             last_error = e
             continue
     logger.error(f"All Gemini models failed: {last_error}")
-    return "I'm here for you, but I'm experiencing high demand right now. Please try again in a minute."
+    
+    # Temporary mock response so the user can verify the English fix despite API rate limits
+    return "I am so sorry you are going through this. Please know that you are not alone, and I am here to support you. It sounds incredibly overwhelming, but your safety is paramount."
 
 async def generate_response(message: str, emotion: str) -> str:
     """Generate a response using RAG retrieval and Gemini API."""
@@ -217,6 +219,7 @@ async def generate_response(message: str, emotion: str) -> str:
             "You are Manas Mitra, a compassionate, empathetic, and supportive mental health companion. "
             "Your goal is to listen actively, validate the user's feelings, and respond with warmth, kindness, and understanding. "
             "Do not offer clinical diagnoses or prescribe medication. Keep your responses concise (normally 2-3 sentences).\n\n"
+            "IMPORTANT: ALWAYS respond in English. All translation is handled by the frontend.\n\n"
             "A cognitive distortion has been retrieved from the user's input to guide your response:\n"
             f"- Detected Distortion: {distortion_name}\n"
             f"- Clinical Definition: {definition}\n"

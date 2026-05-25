@@ -1,24 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  /* Calming Nature Palette - Light Mode */
+  /* ROLLBACK: Restore Original Manas Mitra Theme: Deep Navy Background, Pure White Text, Bright Cyan Accents.
+  Original Light Mode values:
   --background: #f0fdfa;
-  /* Teal-50: Very soft mint/teal background */
   --foreground: #334155;
-  /* Slate-700: Softer than black text */
   --primary: #2dd4bf;
-  /* Teal-400: Soft but vibrant teal */
   --primary-foreground: #ffffff;
   --secondary: #ccfbf1;
-  /* Teal-100: Very light teal for secondary backgrounds */
   --secondary-foreground: #115e59;
-  /* Teal-800: Deep teal for text on secondary */
   --muted: #e2e8f0;
-  /* Slate-200 */
   --muted-foreground: #64748b;
-  /* Slate-500 */
   --accent: #99f6e4;
-  /* Teal-200 */
   --accent-foreground: #134e4a;
   --border: #cbd5e1;
   --input: #e2e8f0;
@@ -27,17 +20,37 @@
   --warning: #fbbf24;
   --error: #f87171;
   --info: #38bdf8;
-
-  /* Chat specific colors - Soft & Calming */
   --chat-bg: #ffffff;
   --chat-user: #ccfbf1;
-  /* Teal-100 */
   --chat-bot: #f0fdfa;
-  /* Teal-50 */
   --chat-border: #99f6e4;
-  /* Teal-200 */
-}
+  */
+  
+  /* Manas Mitra Palette 3 (Soothing Night) - Light Mode equivalent */
+  --background: #1E293B; /* Soft Deep Slate Gray-Purple */
+  --foreground: #E2E8F0; /* Softer Light Gray */
+  --primary: #C0A0E0; /* Soft Pastel Lavender */
+  --primary-foreground: #1E293B; 
+  --secondary: #334155; 
+  --secondary-foreground: #E2E8F0; 
+  --muted: #334155;
+  --muted-foreground: #94a3b8;
+  --accent: #C0A0E0;
+  --accent-foreground: #1E293B;
+  --border: #475569;
+  --input: #334155;
+  --ring: #C0A0E0;
+  --success: #A8D0A4; /* Muted Mint Green for checkmarks */
+  --warning: #fbbf24;
+  --error: #f87171;
+  --info: #38bdf8;
 
+  /* Chat specific colors - Soft & Calming */
+  --chat-bg: #1E293B;
+  --chat-user: #334155;
+  --chat-bot: #293548;
+  --chat-border: #475569;
+}
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -61,6 +74,8 @@
 }
 
 .dark {
+  /* ROLLBACK: Restore Original Manas Mitra Theme: Deep Navy Background, Pure White Text, Bright Cyan Accents.
+  Original Dark Mode values:
   --background: #0f172a;
   --foreground: #f1f5f9;
   --primary: #14b8a6;
@@ -74,14 +89,37 @@
   --border: #334155;
   --input: #334155;
   --ring: #14b8a6;
-
   --card: #1e293b;
   --card-foreground: #f1f5f9;
-
   --chat-bg: #1e293b;
   --chat-user: #0c4a6e;
   --chat-bot: #1e40af;
   --chat-border: #334155;
+  */
+
+  /* Manas Mitra Palette 3 (Soothing Night) */
+  --background: #1E293B; /* Soft Deep Slate Gray-Purple */
+  --foreground: #E2E8F0; /* Softer Light Gray */
+  --primary: #C0A0E0; /* Soft Pastel Lavender */
+  --primary-foreground: #1E293B;
+  --secondary: #334155;
+  --secondary-foreground: #E2E8F0;
+  --muted: #334155;
+  --muted-foreground: #94a3b8;
+  --accent: #C0A0E0;
+  --accent-foreground: #1E293B;
+  --border: #475569;
+  --input: #334155;
+  --ring: #C0A0E0;
+  --success: #A8D0A4; /* Muted Mint Green for checkmarks */
+
+  --card: #293548;
+  --card-foreground: #E2E8F0;
+
+  --chat-bg: #1E293B;
+  --chat-user: #334155;
+  --chat-bot: #293548;
+  --chat-border: #475569;
 }
 
 * {

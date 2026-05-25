@@ -8,6 +8,8 @@ from typing import List, Dict, Any, Optional, Literal
 # 1. FORCE OFFLINE FOR PYTORCH/TRANSFORMERS
 os.environ["HF_HUB_OFFLINE"] = "1"
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
+# Prevent STATUS_ACCESS_VIOLATION (0xC0000005) crash from Rust tokenizer on Windows
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # 2. IMPORT SENTENCE_TRANSFORMERS FIRST TO AVOID WINDOWS DLL CLASH
 from sentence_transformers import SentenceTransformer
@@ -18,8 +20,7 @@ from google.genai import types as genai_types
 from google.genai import errors as genai_errors
 from dotenv import load_dotenv
 
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import json
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -60,7 +61,7 @@ app.add_middleware(
 # Paths for ChromaDB and SentenceTransformer
 current_dir = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.abspath(os.path.join(current_dir, "..", "backend", "chroma_db"))
-MODEL_PATH = os.path.abspath(os.path.join(current_dir, "..", "all-MiniLM-L6-v2")).replace("\\", "/")
+MODEL_PATH = os.path.abspath(os.path.join(current_dir, "..", "multilingual-e5-small")).replace("\\", "/")
 
 # Initialize ChromaDB client and collection
 logger.info(f"Connecting to ChromaDB at: {DB_PATH}")
@@ -77,31 +78,7 @@ collection = chroma_client.get_or_create_collection(
     embedding_function=embedding_func
 )
 
-# Emotion model configuration
-EMOTION_MODEL = "bhadresh-savani/distilbert-base-uncased-emotion"
-try:
-    cache_dir = os.path.expanduser("~/.cache/huggingface/hub/models--bhadresh-savani--distilbert-base-uncased-emotion/snapshots")
-    if os.path.exists(cache_dir):
-        snapshots = os.listdir(cache_dir)
-        if snapshots:
-            EMOTION_MODEL = os.path.abspath(os.path.join(cache_dir, snapshots[0]))
-except Exception:
-    pass
-
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-# Load local emotion classification model
-try:
-    logger.info(f"Loading emotion classification model from: {EMOTION_MODEL} on {DEVICE}...")
-    is_local_emotion = os.path.exists(EMOTION_MODEL)
-    emotion_tokenizer = AutoTokenizer.from_pretrained(EMOTION_MODEL, local_files_only=is_local_emotion)
-    emotion_model = AutoModelForSequenceClassification.from_pretrained(EMOTION_MODEL, local_files_only=is_local_emotion).to(DEVICE)
-    emotion_model.eval()
-    logger.info("Emotion model loaded successfully.")
-except Exception as e:
-    logger.error(f"Error loading emotion model: {str(e)}")
-    emotion_tokenizer = None
-    emotion_model = None
+# Emotion model is now offloaded to Gemini via structured JSON response
 
 class Emotion(str, Enum):
     SADNESS = "sadness"
@@ -123,34 +100,56 @@ class ChatResponse(BaseModel):
 async def health_check():
     return {
         "status": "healthy",
-        "architecture": "RAG + Gemini API",
+        "architecture": "RAG + Gemini API (Structured JSON)",
         "chroma_db_path": DB_PATH,
         "embedding_model": MODEL_PATH,
-        "gemini_configured": bool(os.getenv("GEMINI_API_KEY")),
-        "emotion_model": EMOTION_MODEL,
-        "device": DEVICE
+        "gemini_configured": bool(os.getenv("GEMINI_API_KEY"))
     }
 
-def detect_emotion(text: str) -> str:
-    """Detect the emotion in the given text using the local classification model."""
-    if emotion_model is None or emotion_tokenizer is None:
-        return "neutral"
-    try:
-        inputs = emotion_tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(DEVICE)
-        with torch.no_grad():
-            outputs = emotion_model(**inputs)
+# Local emotion detection removed, offloaded to Gemini
+
+def get_local_fallback(message: str) -> Dict[str, str]:
+    """Generate a highly customized, clinical, and contextual fallback reply when Gemini API is offline/rate-limited."""
+    t = message.lower().strip()
+    
+    # Check for greetings
+    if any(greet in t for greet in ["hi", "hello", "hey", "hola", "greetings", "namaste"]):
+        return {
+            "emotion": "joy",
+            "reply": "Hello! I'm here to listen and support you. How are you feeling today?"
+        }
+    
+    # Check for anxiety / worry / panic
+    if any(w in t for w in ["anxiety", "anxious", "worry", "worried", "panic", "scared", "fear"]):
+        return {
+            "emotion": "fear",
+            "reply": "I understand that anxiety can feel overwhelming, and it's completely brave of you to share. Let's work together to explore what is causing you the most worry right now. What has been on your mind?"
+        }
         
-        predicted_class_idx = torch.argmax(outputs.logits, dim=1).item()
-        emotion = emotion_model.config.id2label[predicted_class_idx]
-        return emotion.lower()
-    except Exception as e:
-        logger.error(f"Error in emotion detection: {str(e)}")
-        return "neutral"
+    # Check for depression / sadness
+    if any(s in t for s in ["sad", "depressed", "depression", "lonely", "hopeless", "empty", "cry", "tough phase"]):
+        return {
+            "emotion": "sadness",
+            "reply": "I hear you, and I want you to know that your feelings are completely valid. Going through a tough phase can make everything feel heavier. I am here to listen—what is a small thing that has brought you even a little comfort recently?"
+        }
+        
+    # Check for stress / feeling overwhelmed
+    if any(s in t for s in ["stress", "stressed", "overwhelmed", "pressure", "tired", "exhausted"]):
+        return {
+            "emotion": "sadness",
+            "reply": "It sounds like you are carrying a lot on your shoulders right now, and that can be incredibly exhausting. Let's look at this together. What specific situations are causing you the most pressure today?"
+        }
+        
+    # Default general fallback
+    return {
+        "emotion": "neutral",
+        "reply": "Thank you for sharing that with me. I'm here to listen and support you through whatever you are experiencing. Can you tell me a bit more about what's on your mind?"
+    }
 
 def _call_gemini(system_instruction: str, message: str) -> str:
     """Synchronous Gemini API call — run via asyncio.to_thread."""
     if not gemini_client:
-        return "I'm here to support you, but my conversational engine is currently offline. Please configure the GEMINI_API_KEY in the environment."
+        return json.dumps(get_local_fallback(message))
 
     models_to_try = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-2.5-flash-lite"]
     last_error = None
@@ -163,6 +162,21 @@ def _call_gemini(system_instruction: str, message: str) -> str:
                     system_instruction=system_instruction,
                     temperature=0.7,
                     max_output_tokens=500,
+                    response_mime_type="application/json",
+                    response_schema={
+                        "type": "OBJECT",
+                        "properties": {
+                            "emotion": {
+                                "type": "STRING",
+                                "description": "The user's primary emotion: sadness, joy, love, anger, fear, or surprise."
+                            },
+                            "reply": {
+                                "type": "STRING",
+                                "description": "Your therapeutic reply in English only."
+                            }
+                        },
+                        "required": ["emotion", "reply"]
+                    }
                 )
             )
             return response.text.strip()
@@ -176,15 +190,19 @@ def _call_gemini(system_instruction: str, message: str) -> str:
             last_error = e
             continue
     logger.error(f"All Gemini models failed: {last_error}")
-    return "I'm here for you, but I'm experiencing high demand right now. Please try again in a minute."
+    
+    # Generate dynamic, high-quality intent fallback instead of static crisis apology
+    fallback_data = get_local_fallback(message)
+    return json.dumps(fallback_data)
 
-async def generate_response(message: str, emotion: str) -> str:
+
+async def generate_response(message: str) -> str:
     """Generate a response using RAG retrieval and Gemini API."""
     try:
         if check_crisis is not None:
             crisis_reply = check_crisis(message, locale="en-IN")
             if crisis_reply is not None:
-                return crisis_reply
+                return json.dumps({"emotion": "fear", "reply": crisis_reply})
 
         # 1. RETRIEVE closest matching distortion from ChromaDB
         try:
@@ -209,6 +227,10 @@ async def generate_response(message: str, emotion: str) -> str:
             "You are Manas Mitra, a compassionate, empathetic, and supportive mental health companion. "
             "Your goal is to listen actively, validate the user's feelings, and respond with warmth, kindness, and understanding. "
             "Do not offer clinical diagnoses or prescribe medication. Keep your responses concise (normally 2-3 sentences).\n\n"
+            "CRITICAL CRISIS PROTOCOL: If the user expresses severe distress, thoughts of self-harm, or a mental health crisis, "
+            "you MUST ONLY provide Indian crisis helplines. Specifically recommend Tele-MANAS (14416 or 1-800-91-4416), "
+            "KIRAN (1800-599-0019), or ERSS (112). You are operating in India, so NEVER provide numbers from other countries.\n\n"
+            "IMPORTANT: ALWAYS respond in English. Do NOT translate your response to Hindi, Bengali, or any other language, even if the user asks you to. The translation will be handled automatically by the frontend system.\n\n"
             "A cognitive distortion has been retrieved from the user's input to guide your response:\n"
             f"- Detected Distortion: {distortion_name}\n"
             f"- Clinical Definition: {definition}\n"
@@ -221,14 +243,21 @@ async def generate_response(message: str, emotion: str) -> str:
 
     except Exception as e:
         logger.error(f"Error generating response: {e}")
-        return "I'm sorry, I'm having trouble processing your request right now. Could you try again later?"
+        return json.dumps({"emotion": "neutral", "reply": "I'm sorry, I'm having trouble processing your request right now. Could you try again later?"})
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(chat_request: ChatRequest):
     try:
         user_message = chat_request.message
-        emotion = detect_emotion(user_message)
-        reply = await generate_response(user_message, emotion)
+        gemini_json_str = await generate_response(user_message)
+        try:
+            data = json.loads(gemini_json_str)
+            emotion = data.get("emotion", "neutral").lower()
+            reply = data.get("reply", gemini_json_str)
+        except json.JSONDecodeError:
+            emotion = "neutral"
+            reply = gemini_json_str
+            
         return {"emotion": emotion, "reply": reply}
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}")

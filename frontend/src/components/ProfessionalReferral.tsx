@@ -206,10 +206,10 @@ export default function ProfessionalReferral() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'psychologist': return 'text-blue-600 dark:text-blue-400';
-      case 'psychiatrist': return 'text-green-600 dark:text-green-400';
-      case 'therapist': return 'text-purple-600 dark:text-purple-400';
-      case 'counselor': return 'text-orange-600 dark:text-orange-400';
+      case 'psychologist': return 'text-primary';
+      case 'psychiatrist': return 'text-primary';
+      case 'therapist': return 'text-primary';
+      case 'counselor': return 'text-primary';
       default: return 'text-slate-600 dark:text-slate-400';
     }
   };
@@ -249,8 +249,8 @@ export default function ProfessionalReferral() {
                   resource.type === 'crisis'
                     ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
                     : resource.type === 'specialized'
-                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-                    : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                    ? 'bg-primary/10 border-primary/20'
+                    : 'bg-success/10 border-success/20'
                 }`}
               >
                 <div className="flex items-start space-x-4">
@@ -258,15 +258,15 @@ export default function ProfessionalReferral() {
                     resource.type === 'crisis'
                       ? 'bg-red-100 dark:bg-red-900'
                       : resource.type === 'specialized'
-                      ? 'bg-blue-100 dark:bg-blue-900'
-                      : 'bg-green-100 dark:bg-green-900'
+                      ? 'bg-primary/20'
+                      : 'bg-success/20'
                   }`}>
                     <Phone className={`h-6 w-6 ${
                       resource.type === 'crisis'
                         ? 'text-red-600 dark:text-red-400'
                         : resource.type === 'specialized'
-                        ? 'text-blue-600 dark:text-blue-400'
-                        : 'text-green-600 dark:text-green-400'
+                        ? 'text-primary'
+                        : 'text-success'
                     }`} />
                   </div>
                   
@@ -320,7 +320,7 @@ export default function ProfessionalReferral() {
                 value={searchLocation}
                 onChange={(e) => setSearchLocation(e.target.value)}
                 placeholder="Enter city, state, or pincode (e.g., Mumbai, Pune, Maharashtra)"
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100"
+                className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-slate-700 dark:text-slate-100"
               />
             </div>
           </div>
@@ -332,7 +332,7 @@ export default function ProfessionalReferral() {
             <select
               value={selectedSpecialization}
               onChange={(e) => setSelectedSpecialization(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100"
+              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-slate-700 dark:text-slate-100"
             >
               <option value="">All Specializations</option>
               {specializations.map((spec) => (
@@ -393,7 +393,7 @@ export default function ProfessionalReferral() {
                     <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                       ⭐ {professional.rating}
                     </div>
-                    <button className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <button className="mt-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                       Contact
                     </button>
                   </div>
@@ -410,7 +410,7 @@ export default function ProfessionalReferral() {
                       {professional.specialization.map((spec, index) => (
                         <span
                           key={index}
-                          className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full"
+                          className="px-2 py-1 bg-primary/20 text-primary text-xs rounded-full"
                         >
                           {spec}
                         </span>
@@ -424,7 +424,7 @@ export default function ProfessionalReferral() {
                       {professional.languages.map((lang, index) => (
                         <span
                           key={index}
-                          className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full"
+                          className="px-2 py-1 bg-success/20 text-success text-xs rounded-full"
                         >
                           {lang}
                         </span>
@@ -438,7 +438,7 @@ export default function ProfessionalReferral() {
                       {professional.insurance.map((ins, index) => (
                         <span
                           key={index}
-                          className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-full"
+                          className="px-2 py-1 bg-primary/20 text-primary text-xs rounded-full"
                         >
                           {ins}
                         </span>
@@ -453,7 +453,7 @@ export default function ProfessionalReferral() {
                     <span className="font-mono">{professional.contact}</span>
                   </div>
                   
-                  <button className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
+                  <button className="flex items-center space-x-2 text-primary hover:text-primary/80 font-medium">
                     <span>View Profile</span>
                     <ExternalLink className="h-4 w-4" />
                   </button>
@@ -465,7 +465,7 @@ export default function ProfessionalReferral() {
       </div>
 
       {/* Additional Resources */}
-      <div className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl p-8 border border-blue-200 dark:border-blue-800">
+      <div className="mt-12 bg-primary/10 rounded-2xl p-8 border border-primary/20">
         <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6 text-center">
           Additional Resources
         </h2>

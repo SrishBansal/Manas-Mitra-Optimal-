@@ -247,11 +247,11 @@ export default function ChatInterface({ onTriggerAssessment, onTriggerCrisis }: 
       <div className="bg-white dark:bg-slate-800 rounded-t-xl border border-slate-200 dark:border-slate-700 p-4 shadow-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-800 dark:to-cyan-800 rounded-lg">
-              <Bot className="h-5 w-5 text-teal-600 dark:text-cyan-400" />
+            <div className="p-2 bg-primary/20 rounded-lg">
+              <Bot className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+              <h2 className="font-semibold text-primary">
                 AI Mental Health Companion
               </h2>
               <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -272,7 +272,7 @@ export default function ChatInterface({ onTriggerAssessment, onTriggerCrisis }: 
               ))}
             </select>
             {isTranslating && (
-              <Loader2 className="h-4 w-4 animate-spin text-teal-600 dark:text-teal-400" />
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
             )}
           </div>
         </div>
@@ -288,7 +288,7 @@ export default function ChatInterface({ onTriggerAssessment, onTriggerCrisis }: 
             <div
               className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                 message.sender === 'user'
-                  ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
                   : message.type === 'crisis'
                   ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
                   : message.type === 'assessment'
@@ -323,8 +323,8 @@ export default function ChatInterface({ onTriggerAssessment, onTriggerCrisis }: 
           <div className="flex justify-start animate-fade-in">
             <div className="bg-slate-100 dark:bg-slate-700 px-4 py-2 rounded-lg shadow-lg">
               <div className="flex items-center space-x-2">
-                <Bot className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                <Loader2 className="h-4 w-4 animate-spin text-teal-600 dark:text-teal-400" />
+                <Bot className="h-4 w-4 text-primary" />
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 <span className="text-sm text-slate-600 dark:text-slate-400">Thinking...</span>
               </div>
             </div>
@@ -342,14 +342,14 @@ export default function ChatInterface({ onTriggerAssessment, onTriggerCrisis }: 
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Share what's on your mind... (Press Enter to send, Shift+Enter for new line)"
-            className="flex-1 resize-none border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-100"
+            className="flex-1 resize-none border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-input text-foreground"
             rows={2}
             disabled={isLoading}
           />
           <button
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isLoading}
-            className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 disabled:bg-slate-400 text-white p-2 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:cursor-not-allowed shadow-lg"
+            className="bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground p-2 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:cursor-not-allowed shadow-lg"
           >
             <Send className="h-5 w-5" />
           </button>

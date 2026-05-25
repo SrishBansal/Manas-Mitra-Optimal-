@@ -30,11 +30,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-800 dark:to-cyan-800 rounded-lg">
-                <Heart className="h-6 w-6 text-teal-600 dark:text-cyan-400" />
+              <div className="p-2 bg-primary/20 rounded-lg">
+                <Heart className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-semibold text-primary">
                   Manas Mitra
                 </h1>
                 <p className="text-sm text-muted-foreground">
@@ -70,8 +70,8 @@ export default function Home() {
                 <button
                   onClick={() => setCurrentView('chat')}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-300 ${currentView === 'chat'
-                    ? 'bg-teal-600 text-white shadow-lg'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
+                    ? 'bg-primary text-primary-foreground shadow-lg'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white/50 dark:hover:bg-slate-700/50'
                     }`}
                 >
                   <MessageCircle className="h-4 w-4 inline mr-1" />
@@ -80,8 +80,8 @@ export default function Home() {
                 <button
                   onClick={() => setCurrentView('relaxation')}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-300 ${currentView === 'relaxation'
-                    ? 'bg-teal-600 text-white shadow-lg'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
+                    ? 'bg-primary text-primary-foreground shadow-lg'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white/50 dark:hover:bg-slate-700/50'
                     }`}
                 >
                   <Moon className="h-4 w-4 inline mr-1" />
@@ -90,8 +90,8 @@ export default function Home() {
                 <button
                   onClick={() => setCurrentView('tests')}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-300 ${currentView === 'tests'
-                    ? 'bg-teal-600 text-white shadow-lg'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
+                    ? 'bg-primary text-primary-foreground shadow-lg'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white/50 dark:hover:bg-slate-700/50'
                     }`}
                 >
                   <Users className="h-4 w-4 inline mr-1" />
@@ -100,8 +100,8 @@ export default function Home() {
                 <button
                   onClick={() => setCurrentView('referral')}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-300 ${currentView === 'referral'
-                    ? 'bg-teal-600 text-white shadow-lg'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
+                    ? 'bg-primary text-primary-foreground shadow-lg'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white/50 dark:hover:bg-slate-700/50'
                     }`}
                 >
                   <Shield className="h-4 w-4 inline mr-1" />

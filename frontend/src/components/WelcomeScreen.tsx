@@ -15,25 +15,25 @@ export default function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
       icon: MessageCircle,
       title: 'AI-Powered Conversations',
       description: 'Engage in meaningful conversations with our empathetic AI companion designed to understand and support your mental health journey.',
-      color: 'text-teal-600 dark:text-teal-400'
+      color: 'text-primary'
     },
     {
       icon: Shield,
       title: 'Anonymous & Secure',
       description: 'Your privacy is our priority. All conversations are anonymous and secure, with no personal data stored.',
-      color: 'text-cyan-600 dark:text-cyan-400'
+      color: 'text-primary'
     },
     {
       icon: Users,
       title: 'Professional Referrals',
       description: 'When needed, we can connect you with qualified mental health professionals in your area.',
-      color: 'text-blue-600 dark:text-blue-400'
+      color: 'text-primary'
     },
     {
       icon: Sparkles,
       title: 'Relaxation Techniques',
       description: 'Access guided breathing exercises, meditation, and other proven relaxation techniques.',
-      color: 'text-emerald-600 dark:text-emerald-400'
+      color: 'text-primary'
     }
   ];
 
@@ -49,13 +49,13 @@ export default function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
     <div className="max-w-4xl mx-auto">
       {/* Hero Section */}
       <div className="text-center mb-12 animate-fade-in">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-full mb-6 shadow-2xl">
-          <Heart className="h-10 w-10 text-white" />
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-full mb-6 shadow-2xl">
+          <Heart className="h-10 w-10 text-primary-foreground" />
         </div>
 
         <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
           Welcome to{' '}
-          <span className="bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+          <span className="text-primary">
             Manas Mitra
           </span>
         </h1>
@@ -68,7 +68,7 @@ export default function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
           <button
             onClick={onStartChat}
-            className="group bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-teal-500/25 flex items-center space-x-2"
+            className="group bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-primary/25 flex items-center space-x-2"
           >
             <span>Start Your Journey</span>
             <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -118,7 +118,7 @@ export default function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
         <div className="grid md:grid-cols-2 gap-4 mb-8">
           {benefits.map((benefit, index) => (
             <div key={index} className="flex items-center space-x-3">
-              <CheckCircle className="h-5 w-5 text-teal-500 flex-shrink-0" />
+              <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
               <span className="text-foreground">{benefit}</span>
             </div>
           ))}
@@ -132,7 +132,7 @@ export default function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
 
           <button
             onClick={onStartChat}
-            className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-teal-500/25"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 shadow-lg shadow-primary/25"
           >
             Begin Your Mental Health Journey
           </button>
