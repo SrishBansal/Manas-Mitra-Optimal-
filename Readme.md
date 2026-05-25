@@ -19,7 +19,7 @@ Our core mission is to bridge the mental health gap for students facing high aca
 
 | Metric | Value |
 |--------|-------|
-| **Total Source Files** | 37+ fully tracked & configured files |
+| **Total Source Files** | 38+ fully tracked & configured files |
 | **Training Dataset Size** | 150+ custom QA JSONL instructions (CBT, GAD-7, PHQ-9 aligned) |
 | **Cognitive Distortions Mapped** | 5 core clinical CBT categories |
 | **Vector DB Seed Entries** | 25 distinct semantic distress vectors |
@@ -70,6 +70,7 @@ Manas-Mitra-Optimal/
 ├── api/                          # 🚀 Primary production FastAPI Web Server
 │   ├── main.py                   # Central server entry point (RAG + Gemini integration)
 │   ├── requirements.txt          # Production python dependencies
+│   ├── Dockerfile                # Docker configuration for Hugging Face Spaces
 │   └── download_models.py        # Local script to download and cache local model weights
 ├── backend/                      # 🧪 Monolithic development & historical environment
 │   ├── api/
@@ -87,10 +88,9 @@ Manas-Mitra-Optimal/
 │   └── dataset_from_openai.jsonl # Transformed instruction records
 ├── config/                       # ⚙️ Operational settings
 │   └── system_prompt.txt         # Clinical CBT system prompt template
-├── render.yaml                   # 🚀 Render backend deployment blueprint configuration
 ├── requirements.txt              # Shared Python libraries
 ├── start_all.ps1                 # Windows PowerShell quick-start script
-└── Readme.md                     # This documentation
+└── README.md                     # This documentation
 ```
 
 ---
@@ -148,7 +148,7 @@ Follow these steps to run both the frontend and backend servers locally on your 
    ```
 
 ### Step 2: Download Local ML Models & Seed the Database
-1. Run the local model download utility to fetch the multilingual embedding model (this keeps all embedding matching local and secure):
+1. Run the local model download utility to fetch the multilingual embedding model:
    ```bash
    python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('multilingual-e5-small').save('./multilingual-e5-small')"
    ```
@@ -194,13 +194,13 @@ Manas Mitra is configured for seamless deployment in production.
                                  │
                                  ▼
                   ┌──────────────────────────────┐
-                  │      Render Web Service      │
-                  │   - Python FastAPI Server    │
+                  │  Hugging Face Space (Docker) │
+                  │   - FastAPI (Port 7860)      │
                   │   - Persistent ChromaDB DB   │
                   │   - Multilingual Embeddings  │
                   └──────────────┬───────────────┘
                                  │
-                             HTTPS GenAI
+                              HTTPS GenAI
                                  │
                                  ▼
                       ┌──────────────────────┐
@@ -213,8 +213,10 @@ Manas Mitra is configured for seamless deployment in production.
 ### 1. Frontend: Vercel Configuration
 The frontend is fully configured for deployment on **Vercel** via our custom `frontend/vercel.json` file. It optimizes installation, utilizes standard React framework detection, and targets the **Mumbai, India (`bom1`)** hosting region, ensuring ultra-low latency connections for Indian students.
 
-### 2. Backend: Render Configuration
-The Python FastAPI backend is configured using the **Render Blueprints specification** (`render.yaml`). The blueprint automates deployment by:
-* Declaring a Python Web Service mapped to the API files.
-* Running `pip install -r requirements.txt` followed by `python backend/scripts/seed_database.py` on build to auto-initialize the vector collection.
-* Setting vital environment variables to enable fast, offline sentence embedding computation.
+### 2. Backend: Hugging Face Spaces (Docker SDK) Configuration
+To accommodate the memory demands of local sentence embeddings, the FastAPI backend is migrated to **Hugging Face Spaces** utilizing the **Docker SDK**, which provides a robust free tier (16GB RAM). The production API automatically exposes port **7860**.
+
+**Instructions for Hugging Face Deployment:**
+1. **Create a New Space**: In your Hugging Face account, select **Create a New Space**, choose the **Docker SDK**, and select the **Blank** template.
+2. **Add Environment Variables**: Under the Space **Settings**, navigate to **Variables and Secrets** and add your `GEMINI_API_KEY` as a **Space Secret**.
+3. **Deploy Code**: Push the contents of the `/api` directory (which contains the `Dockerfile`, `requirements.txt`, and code files) directly to the Space's Git repository. The space will automatically build the container and expose the API.

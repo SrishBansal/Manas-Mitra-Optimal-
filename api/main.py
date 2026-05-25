@@ -61,7 +61,17 @@ app.add_middleware(
 # Paths for ChromaDB and SentenceTransformer
 current_dir = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.abspath(os.path.join(current_dir, "..", "backend", "chroma_db"))
+if not os.path.exists(DB_PATH):
+    # Fallback for production/Docker context when only the api/ folder is copied
+    DB_PATH = os.path.abspath(os.path.join(current_dir, "chroma_db"))
+
 MODEL_PATH = os.path.abspath(os.path.join(current_dir, "..", "multilingual-e5-small")).replace("\\", "/")
+if not os.path.exists(MODEL_PATH):
+    # Fallback to online loading if offline model assets are not present
+    logger.info("Local model directory not found. Configuring online fallback from Hugging Face Hub: 'intfloat/multilingual-e5-small'")
+    os.environ["HF_HUB_OFFLINE"] = "0"
+    os.environ["TRANSFORMERS_OFFLINE"] = "0"
+    MODEL_PATH = "intfloat/multilingual-e5-small"
 
 # Initialize ChromaDB client and collection
 logger.info(f"Connecting to ChromaDB at: {DB_PATH}")
