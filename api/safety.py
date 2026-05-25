@@ -22,6 +22,9 @@ DEFAULT_SAFETY = SafetyConfig(
         "want to die",
         "can't go on",
         "no reason to live",
+        "end this",
+        "end it all",
+        "give up",
         # common typos / variants
         "sucide",
         "sucidie",
@@ -64,6 +67,8 @@ CRISIS_MESSAGE_HI = (
 )
 
 
+import re
+
 def check_crisis(text: str, locale: str = "en-IN") -> Optional[str]:
     """Return a crisis response string if text suggests self-harm/suicide risk, else None.
 
@@ -72,12 +77,15 @@ def check_crisis(text: str, locale: str = "en-IN") -> Optional[str]:
     # lightweight normalization
     t = text.lower().strip()
     t_norm = t.replace("-", " ").replace("\u200c", "").replace("\u200b", "")
+    
     # English
     for kw in DEFAULT_SAFETY.crisis_keywords_en:
-        if kw in t_norm:
+        if re.search(r'\b' + re.escape(kw) + r'\b', t_norm):
             return CRISIS_MESSAGE_EN
+            
     # Hindi/Bilingual
     for kw in DEFAULT_SAFETY.crisis_keywords_hi:
         if kw in text or kw in t_norm:  # allow both exact and normalized checks
             return CRISIS_MESSAGE_HI
+            
     return None

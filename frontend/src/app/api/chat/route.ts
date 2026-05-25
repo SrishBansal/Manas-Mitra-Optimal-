@@ -40,7 +40,7 @@ const responseTemplates = {
 const crisisKeywords = [
   'suicide', 'kill myself', 'end it all', 'not worth living', 'want to die',
   'self harm', 'self-harm', 'harm myself', 'harm', 'hurt myself', 'crisis', 'emergency', 'help me', 'end my life',
-  'better off dead', 'no point', 'give up', 'hopeless', 'worthless'
+  'better off dead', 'no point', 'give up', 'hopeless', 'worthless', 'end this'
 ];
 
 // Assessment triggers
@@ -53,29 +53,29 @@ function detectIntent(message: string): string {
   const lowerMessage = message.toLowerCase();
 
   // Check for crisis indicators first
-  if (crisisKeywords.some(keyword => lowerMessage.includes(keyword))) {
+  if (crisisKeywords.some(keyword => new RegExp(`\\b${keyword}\\b`, 'i').test(lowerMessage))) {
     return 'crisis';
   }
 
   // Check for specific mental health concerns
-  if (lowerMessage.includes('anxiety') || lowerMessage.includes('anxious') || lowerMessage.includes('worry')) {
+  if (/\\b(anxiety|anxious|worry)\\b/i.test(lowerMessage)) {
     return 'anxiety';
   }
 
-  if (lowerMessage.includes('depression') || lowerMessage.includes('depressed') || lowerMessage.includes('sad')) {
+  if (/\\b(depression|depressed|sad)\\b/i.test(lowerMessage)) {
     return 'depression';
   }
 
-  if (lowerMessage.includes('stress') || lowerMessage.includes('stressed') || lowerMessage.includes('overwhelmed')) {
+  if (/\\b(stress|stressed|overwhelmed)\\b/i.test(lowerMessage)) {
     return 'stress';
   }
 
-  if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
+  if (/\\b(hello|hi|hey)\\b/i.test(lowerMessage)) {
     return 'greeting';
   }
 
   // Check if assessment might be helpful
-  if (assessmentTriggers.some(keyword => lowerMessage.includes(keyword))) {
+  if (assessmentTriggers.some(keyword => new RegExp(`\\b${keyword}\\b`, 'i').test(lowerMessage))) {
     return 'assessment';
   }
 
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       console.error("Failed to connect to backend:", backendError);
       return NextResponse.json(
         {
-          response: `[System Error] Connection to backend failed: ${errMsg}. URL: ${backendUrl}/chat`,
+          response: `I'm having trouble reaching the servers right now. If you're in crisis, please contact emergency services immediately.`,
           intent: 'error',
           isCrisis: false,
           needsAssessment: false,

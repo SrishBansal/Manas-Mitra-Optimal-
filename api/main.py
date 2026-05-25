@@ -21,6 +21,7 @@ from google.genai import errors as genai_errors
 from dotenv import load_dotenv
 
 import json
+import re
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -127,28 +128,28 @@ def get_local_fallback(message: str) -> Dict[str, str]:
     t = message.lower().strip()
     
     # Check for greetings
-    if any(greet in t for greet in ["hi", "hello", "hey", "hola", "greetings", "namaste"]):
+    if re.search(r'\b(hi|hello|hey|hola|greetings|namaste)\b', t):
         return {
             "emotion": "joy",
             "reply": "Hello! I'm here to listen and support you. How are you feeling today?"
         }
     
     # Check for anxiety / worry / panic
-    if any(w in t for w in ["anxiety", "anxious", "worry", "worried", "panic", "scared", "fear"]):
+    if re.search(r'\b(anxiety|anxious|worry|worried|panic|scared|fear)\b', t):
         return {
             "emotion": "fear",
             "reply": "I understand that anxiety can feel overwhelming, and it's completely brave of you to share. Let's work together to explore what is causing you the most worry right now. What has been on your mind?"
         }
         
     # Check for depression / sadness
-    if any(s in t for s in ["sad", "depressed", "depression", "lonely", "hopeless", "empty", "cry", "tough phase"]):
+    if re.search(r'\b(sad|depressed|depression|lonely|hopeless|empty|cry|tough phase)\b', t):
         return {
             "emotion": "sadness",
             "reply": "I hear you, and I want you to know that your feelings are completely valid. Going through a tough phase can make everything feel heavier. I am here to listen—what is a small thing that has brought you even a little comfort recently?"
         }
         
     # Check for stress / feeling overwhelmed
-    if any(s in t for s in ["stress", "stressed", "overwhelmed", "pressure", "tired", "exhausted"]):
+    if re.search(r'\b(stress|stressed|overwhelmed|pressure|tired|exhausted)\b', t):
         return {
             "emotion": "sadness",
             "reply": "It sounds like you are carrying a lot on your shoulders right now, and that can be incredibly exhausting. Let's look at this together. What specific situations are causing you the most pressure today?"
@@ -196,6 +197,12 @@ def _call_gemini(system_instruction: str, message: str) -> str:
             return response.text.strip()
         except Exception as e:
             err_str = str(e)
+            if "safety" in err_str.lower() or "blocked" in err_str.lower():
+                logger.warning(f"Safety block triggered on {model_name}.")
+                return json.dumps({
+                    "emotion": "fear",
+                    "reply": "I'm concerned about what you're sharing. Your safety is the most important thing right now. Please reach out to a mental health professional immediately. You can call the Tele-MANAS helpline at 14416 or 1-800-91-4416. You're not alone, and there are people who want to help you."
+                })
             if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
                 logger.warning(f"Rate limit hit on {model_name}, trying next model...")
                 last_error = e
