@@ -6,7 +6,7 @@ let API_KEY = process.env.GEMINI_API_KEY;
 
 if (!API_KEY) {
     try {
-        const envPath = path.resolve(__dirname, '../../.env.local');
+        const envPath = path.resolve(__dirname, '../.env.local');
         const envContent = fs.readFileSync(envPath, 'utf8');
         const match = envContent.match(/GEMINI_API_KEY=(.+)/);
         if (match && match[1]) {

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { NextRequest, NextResponse } from 'next/server';
 
 // Mental health response templates
@@ -24,9 +23,9 @@ const responseTemplates = {
     "Let's work together to find ways to reduce your stress. What relaxation techniques have you tried before?"
   ],
   crisis: [
-    "I'm concerned about what you're sharing. Your safety is the most important thing right now. Please reach out to a mental health professional immediately. You can call the National Suicide Prevention Lifeline at 988, or contact your local emergency services. You're not alone, and there are people who want to help you.",
-    "Your safety is my top priority. If you're having thoughts of self-harm, please contact emergency services immediately at 911 or the National Suicide Prevention Lifeline at 988. There are people who care about you and want to help.",
-    "I'm worried about you. Please reach out to a crisis helpline right now. You can call 988 for the Suicide & Crisis Lifeline, or text HOME to 741741 for the Crisis Text Line. You don't have to face this alone."
+    "I'm concerned about what you're sharing. Your safety is the most important thing right now. Please reach out to a mental health professional immediately. You can call the Tele-MANAS helpline at 14416 or 1-800-91-4416. You're not alone, and there are people who want to help you.",
+    "Your safety is my top priority. If you're having thoughts of self-harm, please contact emergency services immediately at 112 or the KIRAN helpline at 1800-599-0019. There are people who care about you and want to help.",
+    "I'm worried about you. Please reach out to a crisis helpline right now. You can call 1800-599-0019 for the KIRAN helpline, or 14416 for Tele-MANAS. You don't have to face this alone."
   ],
   general: [
     "I'm here to listen and support you. Can you tell me more about what you're experiencing?",
@@ -40,8 +39,8 @@ const responseTemplates = {
 // Crisis keywords that require immediate professional referral
 const crisisKeywords = [
   'suicide', 'kill myself', 'end it all', 'not worth living', 'want to die',
-  'self harm', 'hurt myself', 'crisis', 'emergency', 'help me', 'end my life',
-  'better off dead', 'no point', 'give up', 'hopeless', 'worthless'
+  'self harm', 'self-harm', 'harm myself', 'harm', 'hurt myself', 'crisis', 'emergency', 'help me', 'end my life',
+  'better off dead', 'no point', 'give up', 'hopeless', 'worthless', 'end this'
 ];
 
 // Assessment triggers
@@ -54,29 +53,29 @@ function detectIntent(message: string): string {
   const lowerMessage = message.toLowerCase();
 
   // Check for crisis indicators first
-  if (crisisKeywords.some(keyword => lowerMessage.includes(keyword))) {
+  if (crisisKeywords.some(keyword => new RegExp(`\\b${keyword}\\b`, 'i').test(lowerMessage))) {
     return 'crisis';
   }
 
   // Check for specific mental health concerns
-  if (lowerMessage.includes('anxiety') || lowerMessage.includes('anxious') || lowerMessage.includes('worry')) {
+  if (/\\b(anxiety|anxious|worry)\\b/i.test(lowerMessage)) {
     return 'anxiety';
   }
 
-  if (lowerMessage.includes('depression') || lowerMessage.includes('depressed') || lowerMessage.includes('sad')) {
+  if (/\\b(depression|depressed|sad)\\b/i.test(lowerMessage)) {
     return 'depression';
   }
 
-  if (lowerMessage.includes('stress') || lowerMessage.includes('stressed') || lowerMessage.includes('overwhelmed')) {
+  if (/\\b(stress|stressed|overwhelmed)\\b/i.test(lowerMessage)) {
     return 'stress';
   }
 
-  if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
+  if (/\\b(hello|hi|hey)\\b/i.test(lowerMessage)) {
     return 'greeting';
   }
 
   // Check if assessment might be helpful
-  if (assessmentTriggers.some(keyword => lowerMessage.includes(keyword))) {
+  if (assessmentTriggers.some(keyword => new RegExp(`\\b${keyword}\\b`, 'i').test(lowerMessage))) {
     return 'assessment';
   }
 
@@ -112,12 +111,28 @@ export async function POST(request: NextRequest) {
     const isCrisis = intent === 'crisis';
     const needsAssessment = intent === 'assessment';
 
+    // Local Fail-Safe Safety Hard-Block: Serve helpline templates immediately
+    if (isCrisis) {
+      const responseText = generateResponse('crisis', message);
+      return NextResponse.json({
+        response: responseText,
+        intent,
+        isCrisis,
+        needsAssessment,
+        emotion: 'fear',
+        timestamp: new Date().toISOString(),
+        userId: userId || 'anonymous'
+      });
+    }
+
     let responseText = "";
     let emotion = "neutral";
 
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
     try {
-      // Connect to Python Backend
-      const backendRes = await fetch("http://127.0.0.1:8000/chat", {
+      // Connect to Python Backend (dynamic URL)
+      const backendRes = await fetch(`${backendUrl}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -138,11 +153,12 @@ export async function POST(request: NextRequest) {
         // Fallback to local generation if backend fails
         responseText = generateResponse(intent, message);
       }
-    } catch (backendError: any) {
+    } catch (backendError) {
+      const errMsg = backendError instanceof Error ? backendError.message : String(backendError);
       console.error("Failed to connect to backend:", backendError);
       return NextResponse.json(
         {
-          response: `[System Error] Connection to backend failed: ${backendError?.message || backendError}. URL: http://127.0.0.1:8000/chat`,
+          response: `I'm having trouble reaching the servers right now. If you're in crisis, please contact emergency services immediately.`,
           intent: 'error',
           isCrisis: false,
           needsAssessment: false,
@@ -183,113 +199,4 @@ export async function GET() {
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
-=======
-import { checkSafety, CRISIS_RESPONSE_TEMPLATE } from "@/lib/safety";
-import { MANAS_MITRA_SYSTEM_PROMPT } from "@/lib/prompt";
-import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
-
-export async function POST(req: Request) {
-    try {
-        const body = await req.json();
-        const message = body.message || "";
-
-        if (!message || typeof message !== "string") {
-            return NextResponse.json({ error: "Invalid message" }, { status: 400 });
-        }
-
-        // 1. Safety Check (Keyword Based)
-        if (checkSafety(message)) {
-            return NextResponse.json({
-                reply: CRISIS_RESPONSE_TEMPLATE,
-                needs_help: true
-            });
-        }
-
-        // 2. Check API Key
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            return NextResponse.json({ error: "Server Configuration Error: Missing API Key" }, { status: 500 });
-        }
-
-        // 3. Call Gemini (Using verified working model found via scan)
-        // gemini-2.5-flash was confirmed to work with this key
-        const MODEL_ID = "gemini-2.5-flash";
-
-        const callGemini = async (retryCount = 0): Promise<string> => {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [{ role: "user", parts: [{ text: message }] }],
-                systemInstruction: { parts: [{ text: MANAS_MITRA_SYSTEM_PROMPT }] },
-                generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 1000,
-                }
-            };
-
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`Gemini API Error (Attempt ${retryCount + 1}):`, response.status, errorText);
-
-                // Retry once on network/server errors (5xx)
-                if (retryCount < 1 && response.status >= 500) {
-                    console.log("Retrying API call...");
-                    return callGemini(retryCount + 1);
-                }
-
-                // If 429 or 404, throw immediately
-                throw new Error(`Gemini API Failed (${response.status}): ${errorText}`);
-            }
-
-            const data = await response.json();
-            const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-            if (!reply) {
-                if (data.promptFeedback?.blockReason) {
-                    return "I cannot respond to that due to safety guidelines.";
-                }
-                throw new Error("Empty response from Gemini");
-            }
-
-            return reply;
-        };
-
-        const text = await callGemini();
-
-        // 4. Log to Supabase
-        if (supabase) {
-            supabase.from('chats').insert([
-                { role: 'user', content: message },
-                { role: 'assistant', content: text },
-                { role: 'model', content: MODEL_ID }
-            ]).then(({ error }) => {
-                if (error) console.error('Supabase Log Error:', error);
-            });
-        }
-
-        return NextResponse.json({ reply: text });
-
-    } catch (error: any) {
-        console.error("Critical Chat API Error:", error);
-
-        const errorMessage = error.message || "Unknown error";
-
-        if (errorMessage.includes("429")) {
-            return NextResponse.json({
-                error: `System: Gemini API Quota Exceeded for ${errorMessage.includes('gemini') ? 'selected model' : 'API key'}.`
-            }, { status: 429 });
-        }
-
-        return NextResponse.json({
-            error: `System: Unable to generate response. (${errorMessage})`
-        }, { status: 500 });
-    }
->>>>>>> daf68bcc64963c83bb108ae13c37eeb71ca39222
 }

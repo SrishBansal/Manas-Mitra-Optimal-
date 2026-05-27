@@ -14,7 +14,7 @@ interface BreathingExercise {
     exhale: number;
     pause: number;
   };
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }
 
@@ -24,7 +24,7 @@ interface Meditation {
   description: string;
   duration: number; // in minutes
   type: 'mindfulness' | 'body-scan' | 'loving-kindness' | 'progressive-relaxation';
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
   steps?: { title: string; instruction: string; duration: number }[]; // duration in seconds
 }
@@ -49,7 +49,7 @@ export default function RelaxationTechniques() {
       duration: 300, // 5 minutes
       pattern: { inhale: 4, hold: 7, exhale: 8, pause: 0 },
       icon: Wind,
-      color: 'text-blue-600 dark:text-blue-400'
+      color: 'text-primary'
     },
     {
       id: 'box-breathing',
@@ -58,7 +58,7 @@ export default function RelaxationTechniques() {
       duration: 240, // 4 minutes
       pattern: { inhale: 4, hold: 4, exhale: 4, pause: 4 },
       icon: Waves,
-      color: 'text-green-600 dark:text-green-400'
+      color: 'text-primary'
     },
     {
       id: 'calm-breathing',
@@ -67,7 +67,7 @@ export default function RelaxationTechniques() {
       duration: 180, // 3 minutes
       pattern: { inhale: 4, hold: 2, exhale: 6, pause: 2 },
       icon: Heart,
-      color: 'text-purple-600 dark:text-purple-400'
+      color: 'text-primary'
     }
   ];
 
@@ -79,7 +79,7 @@ export default function RelaxationTechniques() {
       duration: 10,
       type: 'mindfulness',
       icon: Sun,
-      color: 'text-orange-600 dark:text-orange-400',
+      color: 'text-primary',
       steps: [
         { title: 'Settle', instruction: 'Sit comfortably. Soften your gaze or close your eyes. Take a few natural breaths.', duration: 60 },
         { title: 'Anchor', instruction: 'Place gentle attention on the breath at your nostrils or belly.', duration: 180 },
@@ -95,7 +95,7 @@ export default function RelaxationTechniques() {
       duration: 15,
       type: 'body-scan',
       icon: Waves,
-      color: 'text-blue-600 dark:text-blue-400',
+      color: 'text-primary',
       steps: [
         { title: 'Settle', instruction: 'Lie down or sit comfortably. Allow your body to be supported.', duration: 60 },
         { title: 'Head & Face', instruction: 'Bring attention to your forehead, eyes, jaw. Soften and release any tension.', duration: 120 },
@@ -114,7 +114,7 @@ export default function RelaxationTechniques() {
       duration: 12,
       type: 'loving-kindness',
       icon: Heart,
-      color: 'text-pink-600 dark:text-pink-400',
+      color: 'text-primary',
       steps: [
         { title: 'Settle', instruction: 'Sit comfortably and soften the breath. Bring a gentle smile if you like.', duration: 60 },
         { title: 'Self Kindness', instruction: 'Silently repeat: “May I be safe. May I be healthy. May I be peaceful.”', duration: 150 },
@@ -131,7 +131,7 @@ export default function RelaxationTechniques() {
       duration: 20,
       type: 'progressive-relaxation',
       icon: Moon,
-      color: 'text-indigo-600 dark:text-indigo-400',
+      color: 'text-primary',
       steps: [
         { title: 'Settle', instruction: 'Find a comfortable posture. Take a calming breath.', duration: 60 },
         { title: 'Hands & Forearms', instruction: 'Gently tense hands/forearms for 5 seconds, then release fully.', duration: 120 },
@@ -345,7 +345,7 @@ export default function RelaxationTechniques() {
             </h2>
             
             <div className="mb-6">
-              <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+              <div className="text-4xl font-bold text-primary mb-2">
                 {formatTime(timeRemaining)}
               </div>
               <div className="text-lg text-slate-600 dark:text-slate-400">
@@ -361,7 +361,7 @@ export default function RelaxationTechniques() {
             <div className="flex justify-center space-x-4">
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2"
               >
                 {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                 <span>{isPlaying ? 'Pause' : 'Resume'}</span>
@@ -413,7 +413,7 @@ export default function RelaxationTechniques() {
                 <button
                   onClick={() => startBreathingExercise(exercise.id)}
                   disabled={activeExercise === exercise.id}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed"
+                  className="bg-primary hover:bg-primary/90 disabled:bg-muted text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed"
                 >
                   {activeExercise === exercise.id ? 'Active' : 'Start'}
                 </button>
@@ -449,7 +449,7 @@ export default function RelaxationTechniques() {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => setIsMeditating(!isMeditating)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
                       >
                         {isMeditating ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                         <span>{isMeditating ? 'Pause' : 'Resume'}</span>
@@ -523,7 +523,7 @@ export default function RelaxationTechniques() {
                     
                   <button
                     onClick={() => startMeditation(meditation.id)}
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                     >
                       Start Meditation
                     </button>
@@ -536,7 +536,7 @@ export default function RelaxationTechniques() {
       </div>
 
       {/* Quick Relaxation Tips */}
-      <div className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl p-8 border border-blue-200 dark:border-blue-800">
+      <div className="mt-12 bg-primary/10 rounded-2xl p-8 border border-primary/20">
         <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6 text-center">
           Quick Relaxation Tips
         </h2>
