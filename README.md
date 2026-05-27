@@ -117,6 +117,30 @@ Manas-Mitra-Optimal/
 
 ---
 
+## 🧠 Architecture & Engineering Deep Dive
+
+Manas Mitra employs a highly resilient, privacy-first architectural pipeline with several custom engineering features:
+
+### 1. Deterministic Clinical RAG Pipeline
+Rather than relying on the LLM's internal weights to provide therapeutic advice—which risks hallucination or unverified clinical guidance—the backend uses a **Retrieval-Augmented Generation (RAG)** approach:
+- User queries are embedded locally using `multilingual-e5-small` loaded via `sentence-transformers` on CPU.
+- The system queries a local **ChromaDB** containing 25 exact CBT distortion frameworks (e.g., Catastrophizing, All-or-Nothing Thinking).
+- The exact clinical framework is explicitly injected into the Gemini prompt, forcing the LLM to follow established therapeutic guidelines deterministically.
+
+### 2. Multi-Layered Fallback & Safety Systems
+To guarantee uptime during vulnerable moments, the system has 3 layers of redundancy:
+- **Zero-Latency Frontend Circuit Breaker**: The Next.js proxy runs synchronous regex against crisis keywords. If a user expresses severe distress, the request bypasses the network entirely and immediately returns Indian emergency helplines.
+- **LLM Model Chaining**: The generation requests hit a fallback array (`gemini-2.0-flash` ➔ `gemini-2.0-flash-lite` ➔ `gemini-2.5-flash-lite`) to bypass rate-limits (429 Resource Exhausted errors).
+- **Offline Regex Engine**: If all external APIs fail, a lightweight python regex engine (`get_local_fallback`) kicks in to provide a static but empathetic response within milliseconds.
+
+### 3. Serverless Translation Proxy
+To maintain high accuracy in mental health contexts while minimizing cloud API costs, Manas Mitra uses a localized translation strategy:
+- Non-English inputs are routed through a Next.js serverless proxy (`/api/translate`) hitting LibreTranslate and MyMemory endpoints.
+- The backend evaluates logic and intents exclusively in English.
+- Responses are then translated back to the user's native dialect before rendering on the frontend.
+
+---
+
 ## 🚀 Local Setup Instructions
 
 Follow these steps to run both the frontend and backend servers locally on your machine.
