@@ -139,7 +139,7 @@ def get_embedding(text: str) -> Optional[np.ndarray]:
         return None
     try:
         response = gemini_client.models.embed_content(
-            model="text-embedding-004",
+            model="gemini-embedding-001",
             contents=text
         )
         if response.embedding and response.embedding.values:
@@ -222,7 +222,7 @@ class ChatResponse(BaseModel):
 async def health_check():
     return {
         "status": "healthy",
-        "architecture": "Lightweight RAG (Gemini Embeddings + Gemini 2.0 Flash)",
+        "architecture": "Lightweight RAG (Gemini Embeddings + Gemini 2.5 Flash)",
         "memory_profile": "Ultra-lightweight (<60MB)",
         "gemini_configured": bool(os.getenv("GEMINI_API_KEY"))
     }
@@ -318,7 +318,7 @@ def _call_gemini(system_instruction: str, message: str) -> str:
         logger.error("gemini_client is None! Falling back to local intent.")
         return json.dumps(get_local_fallback(message))
 
-    models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro"]
+    models_to_try = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.6-flash", "gemini-2.5-pro"]
     last_error = None
     
     for model_name in models_to_try:
