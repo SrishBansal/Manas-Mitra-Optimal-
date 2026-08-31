@@ -227,6 +227,15 @@ async def health_check():
         "gemini_configured": bool(os.getenv("GEMINI_API_KEY"))
     }
 
+@app.get("/debug/gemini")
+async def debug_gemini(msg: str = "Hello, I am testing the AI"):
+    try:
+        res = await asyncio.to_thread(_call_gemini, "You are a helpful companion. Respond in JSON.", msg)
+        return {"success": True, "raw": res}
+    except Exception as e:
+        return {"success": False, "error": str(e), "traceback": traceback.format_exc()}
+
+
 def get_local_fallback(message: str) -> Dict[str, str]:
     """Generate high-quality clinical fallback reply when Gemini API is offline."""
     t = message.lower().strip()
@@ -282,44 +291,72 @@ def get_local_fallback(message: str) -> Dict[str, str]:
         ])
     }
 
+class GeminiResponseSchema(BaseModel):
+    emotion: str
+    reply: str
+
+def clean_json_response(raw_text: str) -> Optional[Dict[str, str]]:
+    """Clean markdown code blocks and parse JSON response."""
+    cleaned = raw_text.strip()
+    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s*```$", "", cleaned)
+    try:
+        data = json.loads(cleaned)
+        if isinstance(data, dict) and "reply" in data:
+            return {
+                "emotion": str(data.get("emotion", "neutral")).lower(),
+                "reply": str(data.get("reply", "")).strip()
+            }
+    except Exception:
+        pass
+    return None
+
 def _call_gemini(system_instruction: str, message: str) -> str:
     """Synchronous Gemini API call with multi-model fallback pipeline."""
     logger.info(f"Initiating Gemini API call for message: '{message[:50]}...'")
     if not gemini_client:
-        logger.error("gemini_client is None! Falling back immediately.")
+        logger.error("gemini_client is None! Falling back to local intent.")
         return json.dumps(get_local_fallback(message))
 
-    models_to_try = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-2.5-flash-lite"]
+    models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro"]
     last_error = None
+    
     for model_name in models_to_try:
         try:
-            logger.info(f"Attempting Gemini call with: {model_name}")
-            response = gemini_client.models.generate_content(
-                model=model_name,
-                contents=message,
-                config=genai_types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    temperature=0.7,
-                    max_output_tokens=500,
-                    response_mime_type="application/json",
-                    response_schema={
-                        "type": "OBJECT",
-                        "properties": {
-                            "emotion": {
-                                "type": "STRING",
-                                "description": "The user's primary emotion: sadness, joy, love, anger, fear, or surprise."
-                            },
-                            "reply": {
-                                "type": "STRING",
-                                "description": "Your therapeutic reply in English only."
-                            }
-                        },
-                        "required": ["emotion", "reply"]
-                    }
+            logger.info(f"Attempting Gemini call with model: {model_name}")
+            # Try structured output first
+            try:
+                response = gemini_client.models.generate_content(
+                    model=model_name,
+                    contents=message,
+                    config=genai_types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        temperature=0.7,
+                        max_output_tokens=500,
+                        response_mime_type="application/json",
+                        response_schema=GeminiResponseSchema,
+                    )
                 )
-            )
-            logger.info(f"Successfully generated response with {model_name}")
-            return response.text.strip()
+            except Exception as schema_err:
+                logger.warning(f"Schema config failed on {model_name}, trying plain JSON mode: {schema_err}")
+                response = gemini_client.models.generate_content(
+                    model=model_name,
+                    contents=f"{message}\n\nRespond ONLY with a valid JSON object matching: {{\"emotion\": \"sadness|joy|love|anger|fear|surprise\", \"reply\": \"therapeutic message\"}}",
+                    config=genai_types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        temperature=0.7,
+                        max_output_tokens=500,
+                        response_mime_type="application/json",
+                    )
+                )
+
+            if response and response.text:
+                parsed = clean_json_response(response.text)
+                if parsed and parsed.get("reply"):
+                    logger.info(f"Successfully generated response with {model_name}: {parsed['reply'][:50]}...")
+                    return json.dumps(parsed)
+                elif response.text.strip():
+                    return json.dumps({"emotion": "neutral", "reply": response.text.strip()})
         except Exception as e:
             err_str = str(e)
             logger.error(f"Gemini API error on {model_name}: {err_str}")
@@ -331,7 +368,7 @@ def _call_gemini(system_instruction: str, message: str) -> str:
             last_error = e
             continue
             
-    logger.error(f"All Gemini models failed. Activating local fallback.")
+    logger.error(f"All Gemini models failed. Last error: {last_error}. Activating local fallback.")
     return json.dumps(get_local_fallback(message))
 
 async def generate_response(message: str) -> str:
