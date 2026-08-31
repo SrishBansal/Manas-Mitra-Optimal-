@@ -31,7 +31,7 @@ Our core mission is to bridge the mental health gap for students facing high aca
 
 ---
 
-## 🎨 Soothing Night UI/UX Theme & Clinical Features
+## 🎨 UI/UX Theme & Clinical Features
 
 Manas Mitra is designed around the **"Soothing Night" Theme**—a visually dark, highly immersive, glassmorphic layout created specifically to reduce visual stimulation, promote emotional calm, and convey security.
 
