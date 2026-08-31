@@ -128,7 +128,8 @@ export async function POST(request: NextRequest) {
     let responseText = "";
     let emotion = "neutral";
 
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const rawBackendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "https://manas-mitra-api.onrender.com";
+    const backendUrl = rawBackendUrl.replace(/\/+$/, "");
 
     try {
       // Connect to Python Backend (dynamic URL)

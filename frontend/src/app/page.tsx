@@ -115,11 +115,21 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {currentView === 'welcome' && <WelcomeScreen onStartChat={() => setCurrentView('chat')} />}
-        {currentView === 'chat' && <ChatInterface />}
-        {currentView === 'relaxation' && <RelaxationTechniques />}
-        {currentView === 'tests' && <PsychologicalTests />}
-        {currentView === 'referral' && <ProfessionalReferral />}
+        <div className={currentView === 'welcome' ? 'block' : 'hidden'}>
+          <WelcomeScreen onStartChat={() => setCurrentView('chat')} />
+        </div>
+        <div className={currentView === 'chat' ? 'block' : 'hidden'}>
+          <ChatInterface />
+        </div>
+        <div className={currentView === 'relaxation' ? 'block' : 'hidden'}>
+          <RelaxationTechniques />
+        </div>
+        <div className={currentView === 'tests' ? 'block' : 'hidden'}>
+          <PsychologicalTests />
+        </div>
+        <div className={currentView === 'referral' ? 'block' : 'hidden'}>
+          <ProfessionalReferral />
+        </div>
       </main>
 
       {/* Footer */}
