@@ -242,16 +242,16 @@ export default function ChatInterface({ onTriggerAssessment, onTriggerCrisis }: 
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-3 sm:px-0">
       {/* Chat Header */}
       <div className="bg-white dark:bg-slate-800 rounded-t-xl border border-slate-200 dark:border-slate-700 p-4 shadow-lg">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-primary/20 rounded-lg">
               <Bot className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold text-primary">
+              <h2 className="font-semibold text-primary truncate max-w-[60%] sm:max-w-none">
                 AI Mental Health Companion
               </h2>
               <p className="text-sm text-slate-600 dark:text-slate-400">
