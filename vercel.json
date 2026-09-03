@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "framework": "nextjs",
+  "buildCommand": "cd frontend && npm run build",
+  "installCommand": "cd frontend && npm install",
+  "outputDirectory": "frontend/.next",
+  "regions": ["bom1"],
+  "functions": {
+    "api/*.py": {
+      "maxDuration": 60,
+      "runtime": "python3.12"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/py/:path*",
+      "destination": "/api/index"
+    }
+  ]
+}

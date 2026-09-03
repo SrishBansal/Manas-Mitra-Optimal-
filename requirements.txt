@@ -1,8 +1,6 @@
-# Core ML
-torch>=2.2.0
-sentence-transformers
-chromadb
+# Core ML & API
 google-genai
+
 
 # Utilities
 pandas>=2.2.0

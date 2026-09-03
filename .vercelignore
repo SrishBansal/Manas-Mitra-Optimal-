@@ -1,0 +1,11 @@
+backend/
+data/
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+.DS_Store
+.git/
+scripts/train_*.py

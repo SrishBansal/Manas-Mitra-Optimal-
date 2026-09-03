@@ -39,8 +39,8 @@ const responseTemplates = {
 // Crisis keywords that require immediate professional referral
 const crisisKeywords = [
   'suicide', 'kill myself', 'end it all', 'not worth living', 'want to die',
-  'self harm', 'self-harm', 'harm myself', 'harm', 'hurt myself', 'crisis', 'emergency', 'help me', 'end my life',
-  'better off dead', 'no point', 'give up', 'hopeless', 'worthless', 'end this'
+  'self harm', 'self-harm', 'harm myself', 'hurt myself', 'crisis', 'emergency', 'end my life',
+  'better off dead', 'no point', 'give up', 'end this'
 ];
 
 // Assessment triggers
@@ -128,12 +128,16 @@ export async function POST(request: NextRequest) {
     let responseText = "";
     let emotion = "neutral";
 
-    const rawBackendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "https://manas-mitra-api.onrender.com";
+    const host = request.headers.get('host') || 'localhost:3000';
+    const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https';
+    const defaultBackend = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8000' : `${protocol}://${host}/api/py`;
+    const rawBackendUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || defaultBackend;
     const backendUrl = rawBackendUrl.replace(/\/+$/, "");
+    const targetUrl = backendUrl.endsWith('/chat') ? backendUrl : `${backendUrl}/chat`;
 
     try {
       // Connect to Python Backend (dynamic URL)
-      const backendRes = await fetch(`${backendUrl}/chat`, {
+      const backendRes = await fetch(targetUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
