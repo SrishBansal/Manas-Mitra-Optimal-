@@ -124,3 +124,4 @@ api/test_rag.py
 api/test_import.py
 api/test_tokenizer.py
 test_seed.py
+.vercel
