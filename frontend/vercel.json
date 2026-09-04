@@ -7,8 +7,7 @@
   "regions": ["bom1"],
   "functions": {
     "api/*.py": {
-      "maxDuration": 60,
-      "runtime": "python3.12"
+      "maxDuration": 60
     }
   },
   "rewrites": [
