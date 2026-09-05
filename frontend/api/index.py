@@ -205,14 +205,15 @@ def clean_json_response(raw_text: str) -> Optional[Dict[str, str]]:
                 except Exception:
                     pass
                     
-            return {
-                "emotion": str(emotion_val).lower(),
-                "reply": str(reply_val).strip()
-            }
+            if reply_val and not reply_val.startswith("{"):
+                return {
+                    "emotion": str(emotion_val).lower(),
+                    "reply": str(reply_val).strip()
+                }
     except Exception:
         pass
         
-    return {"emotion": "neutral", "reply": cleaned}
+    return None
 
 def _call_gemini(system_instruction: str, message: str) -> str:
     """Synchronous Gemini API call with multi-model fallback chain."""
@@ -222,22 +223,28 @@ def _call_gemini(system_instruction: str, message: str) -> str:
         return json.dumps(get_local_fallback(message))
 
     # Valid active Gemini models (verified against Gemini API)
-    models_to_try = ["gemini-2.5-flash", "gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash"]
+    models_to_try = ["gemini-2.5-flash", "gemini-3.5-flash", "gemini-3.7-flash"]
     last_error = None
     
     for model_name in models_to_try:
         try:
             logger.info(f"Attempting Gemini call with model: {model_name}")
+            config_kwargs = {
+                "system_instruction": system_instruction,
+                "temperature": 0.7,
+                "max_output_tokens": 1000,
+                "response_mime_type": "application/json",
+                "response_schema": RESPONSE_SCHEMA,
+            }
+            try:
+                config_kwargs["thinking_config"] = genai_types.ThinkingConfig(thinking_budget=0)
+            except Exception:
+                pass
+
             response = gemini_client.models.generate_content(
                 model=model_name,
                 contents=message,
-                config=genai_types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    temperature=0.7,
-                    max_output_tokens=500,
-                    response_mime_type="application/json",
-                    response_schema=RESPONSE_SCHEMA,
-                )
+                config=genai_types.GenerateContentConfig(**config_kwargs)
             )
 
             if response and response.text:
@@ -245,7 +252,7 @@ def _call_gemini(system_instruction: str, message: str) -> str:
                 if parsed and parsed.get("reply"):
                     logger.info(f"Successfully generated response with {model_name}: {parsed['reply'][:50]}...")
                     return json.dumps(parsed)
-                elif response.text.strip():
+                elif response.text.strip() and not response.text.strip().startswith("{"):
                     return json.dumps({"emotion": "neutral", "reply": response.text.strip()})
         except Exception as e:
             err_str = str(e)
