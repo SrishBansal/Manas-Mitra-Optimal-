@@ -139,9 +139,16 @@ _GREETING_RE = re.compile(
 
 # Direct-advice request pattern — triggers mandatory actionable response (Issue 9)
 _DIRECT_ADVICE_RE = re.compile(
-    r'\b(what should i do|what is the solution|how (do|can) i (fix|deal with|handle|overcome)|'
-    r'give me (advice|suggestions?|tips?)|tell me what to do|what can i do|'
-    r'any suggestions?|what do i do|how to (fix|stop|deal))\b',
+    r'('
+    r'\bwhat\s+(?:should|can|could|would|must|do)\s+(?:\w+\s+)*do\b|'
+    r'\bwhat\s+to\s+do\b|'
+    r'\bhow\s+(?:to|can|do|should|could)\s+(?:\w+\s+)*(?:handle|deal|fix|solve|manage|tackle|proceed|address|do)\b|'
+    r'\b(?:give|got|have|need|want|any)\s+(?:\w+\s+)*(?:advice|suggestions?|tips?|guidance|recommendations?|steps?)\b|'
+    r'\b(?:tips?|advice|suggestions?)\s+(?:on|for|about|to)\b|'
+    r'\b(?:tell|show)\s+me\s+what\s+to\b|'
+    r'\bwhat\s+is\s+the\s+solution\b|'
+    r'\b(?:don\'?t\s+know|idk|not\s+sure)\s+what\s+to\s+do\b'
+    r')',
     re.IGNORECASE
 )
 
