@@ -101,7 +101,7 @@ export default function ChatInterface({ onTriggerAssessment, onTriggerCrisis }: 
   // Crisis keywords that trigger immediate professional referral
   const crisisKeywords = [
     'suicide', 'kill myself', 'end it all', 'not worth living', 'want to die',
-    'self harm', 'hurt myself', 'crisis', 'emergency', 'help me'
+    'self harm', 'hurt myself', 'crisis', 'emergency'
   ];
 
   // Assessment triggers
@@ -279,7 +279,7 @@ export default function ChatInterface({ onTriggerAssessment, onTriggerCrisis }: 
       </div>
 
       {/* Messages Container */}
-      <div className="bg-white dark:bg-slate-800 border-x border-slate-200 dark:border-slate-700 h-96 overflow-y-auto p-4 space-y-4">
+      <div className="bg-white dark:bg-slate-800 border-x border-slate-200 dark:border-slate-700 min-h-[300px] max-h-[60dvh] overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -335,21 +335,21 @@ export default function ChatInterface({ onTriggerAssessment, onTriggerCrisis }: 
       </div>
 
       {/* Input Area */}
-      <div className="bg-white dark:bg-slate-800 rounded-b-xl border border-slate-200 dark:border-slate-700 p-4 shadow-lg">
+      <div className="bg-white dark:bg-slate-800 rounded-b-xl border border-slate-200 dark:border-slate-700 p-4 pb-safe shadow-lg">
         <div className="flex space-x-2">
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Share what's on your mind... (Press Enter to send, Shift+Enter for new line)"
-            className="flex-1 resize-none border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-input text-foreground"
+            className="flex-1 resize-none border border-border rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-ring bg-input text-foreground min-h-[44px]"
             rows={2}
             disabled={isLoading}
           />
           <button
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isLoading}
-            className="bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground p-2 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:cursor-not-allowed shadow-lg"
+            className="bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground p-2 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:cursor-not-allowed shadow-lg min-h-[44px] min-w-[44px]"
           >
             <Send className="h-5 w-5" />
           </button>

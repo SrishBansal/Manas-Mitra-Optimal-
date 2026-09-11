@@ -24,9 +24,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+    <div className="min-h-dvh bg-background text-foreground transition-colors duration-300">
       {/* Header */}
-      <header className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50 shadow-lg">
+      <header className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50 shadow-lg pt-safe">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center gap-2 py-3 min-h-[4rem]">
             <div className="flex items-center space-x-3">
@@ -114,7 +114,7 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-safe">
         <div className={currentView === 'welcome' ? 'block' : 'hidden'}>
           <WelcomeScreen onStartChat={() => setCurrentView('chat')} />
         </div>

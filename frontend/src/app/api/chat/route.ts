@@ -58,19 +58,19 @@ function detectIntent(message: string): string {
   }
 
   // Check for specific mental health concerns
-  if (/\\b(anxiety|anxious|worry)\\b/i.test(lowerMessage)) {
+  if (/\b(anxiety|anxious|worry)\b/i.test(lowerMessage)) {
     return 'anxiety';
   }
 
-  if (/\\b(depression|depressed|sad)\\b/i.test(lowerMessage)) {
+  if (/\b(depression|depressed|sad)\b/i.test(lowerMessage)) {
     return 'depression';
   }
 
-  if (/\\b(stress|stressed|overwhelmed)\\b/i.test(lowerMessage)) {
+  if (/\b(stress|stressed|overwhelmed)\b/i.test(lowerMessage)) {
     return 'stress';
   }
 
-  if (/\\b(hello|hi|hey)\\b/i.test(lowerMessage)) {
+  if (/\b(hello|hi|hey)\b/i.test(lowerMessage)) {
     return 'greeting';
   }
 

@@ -131,11 +131,34 @@ def get_query_embedding(text: str) -> Optional[np.ndarray]:
         logger.warning(f"Gemini embedding query error: {e}")
     return None
 
+# Greeting pattern — messages that should bypass RAG entirely (Issue 7)
+_GREETING_RE = re.compile(
+    r'^\s*(hi+|hello+|hey+|howdy|yo|hiya|sup|greetings?)\s*[!.?]*\s*$',
+    re.IGNORECASE
+)
+
+# Direct-advice request pattern — triggers mandatory actionable response (Issue 9)
+_DIRECT_ADVICE_RE = re.compile(
+    r'\b(what should i do|what is the solution|how (do|can) i (fix|deal with|handle|overcome)|'
+    r'give me (advice|suggestions?|tips?)|tell me what to do|what can i do|'
+    r'any suggestions?|what do i do|how to (fix|stop|deal))\b',
+    re.IGNORECASE
+)
+
 def retrieve_cognitive_distortion(query: str) -> Dict[str, str]:
     """Retrieve closest matching CBT distortion using lightweight precomputed embeddings & keyword fallback."""
     query_clean = query.strip()
-    
-    # 1. Semantic Embedding Search
+
+    # 0. Greeting short-circuit — skip RAG for plain greetings (Issue 7)
+    if _GREETING_RE.match(query_clean):
+        logger.info(f"Greeting short-circuit: skipping RAG for '{query_clean}'")
+        return {
+            "name": "General Support",
+            "definition": "No specific cognitive distortion detected.",
+            "framework": "Listen empathetically, validate the user's emotional state, and respond with warmth."
+        }
+
+    # 1. Semantic Embedding Search (threshold raised 0.40 → 0.55 to avoid weak/coincidental matches)
     if PRECOMPUTED_EMBEDDINGS:
         q_vec = get_query_embedding(query_clean)
         if q_vec is not None:
@@ -147,8 +170,8 @@ def retrieve_cognitive_distortion(query: str) -> Dict[str, str]:
                 if sim > best_score:
                     best_score = sim
                     best_item = item
-            
-            if best_item and best_score >= 0.40:
+
+            if best_item and best_score >= 0.55:  # Issue 7: raised from 0.40
                 logger.info(f"RAG retrieved distortion: {best_item['distortion_name']} (similarity: {best_score:.3f}) for query '{query_clean[:30]}'")
                 return {
                     "name": best_item["distortion_name"],
@@ -313,8 +336,13 @@ def get_local_fallback(message: str) -> Dict[str, str]:
         ])
     }
 
-async def generate_response(message: str) -> str:
-    """Generate response using RAG retrieval and Gemini API."""
+# Short-term in-memory session storage: session_id → list of {"user": ..., "bot": ...} dicts
+# Capped at MAX_SESSION_TURNS turns per session. Works per-instance (Vercel serverless).
+SESSION_MEMORY: Dict[str, List[Dict[str, str]]] = {}
+MAX_SESSION_TURNS = 5
+
+async def generate_response(message: str, session_id: Optional[str] = None) -> str:
+    """Generate response using RAG retrieval, session memory, and Gemini API."""
     try:
         # 1. CRISIS SAFETY HARD-BLOCK
         if check_crisis is not None:
@@ -322,29 +350,70 @@ async def generate_response(message: str) -> str:
             if crisis_reply is not None:
                 return json.dumps({"emotion": "fear", "reply": crisis_reply})
 
-        # 2. LIGHTWEIGHT RAG RETRIEVAL
+        # 2. LIGHTWEIGHT RAG RETRIEVAL (Issue 7: greeting short-circuit + threshold 0.55)
         rag_data = retrieve_cognitive_distortion(message)
         distortion_name = rag_data["name"]
         distortion_def = rag_data["definition"]
         distortion_framework = rag_data["framework"]
 
-        # 3. BUILD SYSTEM PROMPT
+        # 3. BUILD CONVERSATION HISTORY BLOCK (Issue 9: short-term session memory)
+        history_block = ""
+        if session_id and session_id in SESSION_MEMORY and SESSION_MEMORY[session_id]:
+            turns = SESSION_MEMORY[session_id][-MAX_SESSION_TURNS:]
+            history_lines = []
+            for turn in turns:
+                history_lines.append(f"User: {turn['user']}")
+                history_lines.append(f"Manas Mitra: {turn['bot']}")
+            history_block = "\nRecent conversation history (for context — do NOT repeat these replies verbatim):\n" + "\n".join(history_lines) + "\n"
+            logger.info(f"Session {session_id}: injecting {len(turns)} history turns into prompt.")
+
+        # 4. DETECT DIRECT-ADVICE REQUEST (Issue 9)
+        wants_advice = bool(_DIRECT_ADVICE_RE.search(message))
+        advice_override = ""
+        if wants_advice:
+            logger.info(f"Direct-advice intent detected for: '{message[:60]}'")
+            advice_override = (
+                "\nIMPORTANT: The user has explicitly asked for concrete guidance. "
+                "You MUST include at least one specific, actionable suggestion "
+                "(such as a grounding technique, a single small next step, or a practical reframing "
+                "tied to the distortion framework above) alongside your validation. "
+                "Do NOT respond with only questions or only emotional reflection."
+            )
+
+        # 5. BUILD SYSTEM PROMPT (Issue 9: updated principles + history + advice override)
         system_prompt = f"""You are Manas Mitra, a compassionate, empathetic, and culturally aware AI mental health companion designed specifically for college students in India.
 
 Clinical Therapeutic Guidelines (Cognitive Behavioral Therapy - CBT):
 - Current Identified Thought Pattern / Distortion: {distortion_name}
 - Definition: {distortion_def}
 - Therapeutic Framework to Apply: {distortion_framework}
-
+{history_block}
 Communication Principles:
 1. Show deep warmth, validation, and emotional resonance.
 2. Avoid medical jargon or diagnosing. Frame suggestions as gentle self-exploration.
 3. Keep responses concise (2-4 sentences max), clear, and reassuring.
 4. Always respond with a valid JSON object matching this exact schema:
-{{"emotion": "sadness|joy|love|anger|fear|surprise|neutral", "reply": "Your empathetic response here"}}"""
+{{"emotion": "sadness|joy|love|anger|fear|surprise|neutral", "reply": "Your empathetic response here"}}
+5. When the user explicitly asks what they should do or asks for a solution, shift from only validation to offering 1-3 small, concrete, actionable suggestions alongside your empathy.{advice_override}"""
 
-        # 4. EXECUTE GEMINI API CALL
+        # 6. EXECUTE GEMINI API CALL
         response_json_str = await asyncio.to_thread(_call_gemini, system_prompt, message)
+
+        # 7. STORE TURN IN SESSION MEMORY (Issue 9)
+        if session_id:
+            try:
+                parsed = json.loads(response_json_str)
+                bot_reply = parsed.get("reply", "")
+                if bot_reply:
+                    if session_id not in SESSION_MEMORY:
+                        SESSION_MEMORY[session_id] = []
+                    SESSION_MEMORY[session_id].append({"user": message, "bot": bot_reply})
+                    # Cap to MAX_SESSION_TURNS
+                    if len(SESSION_MEMORY[session_id]) > MAX_SESSION_TURNS:
+                        SESSION_MEMORY[session_id] = SESSION_MEMORY[session_id][-MAX_SESSION_TURNS:]
+            except Exception as mem_err:
+                logger.warning(f"Could not store session turn: {mem_err}")
+
         return response_json_str
 
     except Exception as e:
@@ -376,8 +445,9 @@ async def health_check():
 async def chat_endpoint(request: ChatRequest):
     if not request.message:
         raise HTTPException(status_code=400, detail="Message is required")
-        
-    response_json_str = await generate_response(request.message)
+
+    # Pass session_id so generate_response can use/update session memory (Issue 9)
+    response_json_str = await generate_response(request.message, session_id=request.session_id)
     try:
         data = json.loads(response_json_str)
         return ChatResponse(
